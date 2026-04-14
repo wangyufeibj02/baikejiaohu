@@ -1,0 +1,119 @@
+{
+  "id": "abe54a42",
+  "name": "图片题干-图片3选项",
+  "questionType": "choice",
+  "stemType": "image",
+  "optionStyle": "image",
+  "variant": "image_image_3",
+  "optionCount": 3,
+  "description": "顶部题干大图，下方3个图片选项",
+  "elements": [
+    {
+      "id": "pre_24",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "pre_20",
+      "presetKey": "stem_image",
+      "label": "题干图",
+      "type": "rect",
+      "color": "#0ea5e9",
+      "x": 530,
+      "y": 241,
+      "w": 564,
+      "h": 300,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      }
+    },
+    {
+      "id": "pre_21",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 330,
+      "y": 601,
+      "w": 228,
+      "h": 228,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_22",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 698,
+      "y": 601,
+      "w": 228,
+      "h": 228,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_23",
+      "presetKey": "option_image",
+      "label": "选项图3",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1066,
+      "y": 601,
+      "w": 228,
+      "h": 228,
+      "borderRadius": 30
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148231,
+  "updatedAt": 1775627296054,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default",
+  "textStyle": {
+    "fontFamily": "方正粗圆斑马英语",
+    "fontSize": 36,
+    "fontColor": "#2f4d90",
+    "bgColor": "#ffffff",
+    "align": "center",
+    "letterSpacing": 0
+  },
+  "optionStates": {
+    "selected": {
+      "borderWidth": 4,
+      "borderColor": "#3b82f6",
+      "borderOpacity": 1,
+      "borderStyle": "dashed",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 8,
+      "borderRadius": 16,
+      "fillColor": "#3b82f6",
+      "fillOpacity": 0
+    },
+    "correct": {
+      "borderWidth": 4,
+      "borderColor": "#22c55e",
+      "borderOpacity": 1,
+      "borderStyle": "dashed",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 8,
+      "borderRadius": 16,
+      "fillColor": "#22c55e",
+      "fillOpacity": 0.15
+    }
+  }
+}

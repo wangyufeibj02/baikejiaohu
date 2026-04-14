@@ -1,0 +1,100 @@
+{
+  "id": "ab36d6ef",
+  "name": "文字题干-图片4选项",
+  "questionType": "choice",
+  "stemType": "text",
+  "optionStyle": "image",
+  "variant": "text_image_4",
+  "optionCount": 4,
+  "description": "顶部文字题干，2×2网格4个图片选项",
+  "elements": [
+    {
+      "id": "pre_1m",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "pre_1h",
+      "presetKey": "stem_text",
+      "label": "题干文字",
+      "type": "text",
+      "color": "#0ea5e9",
+      "x": 370,
+      "y": 293,
+      "w": 884,
+      "h": 180,
+      "textContent": "请选择正确答案",
+      "fontSize": 36,
+      "textColor": "#1e3a8a",
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      }
+    },
+    {
+      "id": "pre_1i",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 212,
+      "y": 546,
+      "w": 240,
+      "h": 240,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_1j",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 532,
+      "y": 546,
+      "w": 240,
+      "h": 240,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_1k",
+      "presetKey": "option_image",
+      "label": "选项图3",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 852,
+      "y": 546,
+      "w": 240,
+      "h": 240,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_1l",
+      "presetKey": "option_image",
+      "label": "选项图4",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1172,
+      "y": 546,
+      "w": 240,
+      "h": 240,
+      "borderRadius": 30
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148230,
+  "updatedAt": 1775209030089,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default"
+}

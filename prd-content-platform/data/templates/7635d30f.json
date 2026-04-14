@@ -1,0 +1,118 @@
+{
+  "id": "7635d30f",
+  "name": "图片题干-左右布局3选项",
+  "questionType": "choice",
+  "stemType": "image",
+  "optionStyle": "image",
+  "variant": "image_image_side_3",
+  "optionCount": 3,
+  "description": "左侧大题干图 + 右侧3个竖排选项 + 配音",
+  "elements": [
+    {
+      "id": "pre_2c",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "pre_25",
+      "presetKey": "stem_image",
+      "label": "题干图",
+      "type": "rect",
+      "color": "#0ea5e9",
+      "x": 185,
+      "y": 266,
+      "w": 915,
+      "h": 555,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      }
+    },
+    {
+      "id": "pre_26",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1186,
+      "y": 295,
+      "w": 230,
+      "h": 126,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_27",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1186,
+      "y": 481,
+      "w": 230,
+      "h": 126,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_28",
+      "presetKey": "option_image",
+      "label": "选项图3",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1186,
+      "y": 667,
+      "w": 230,
+      "h": 126,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_29",
+      "presetKey": "audio_btn",
+      "label": "配音1",
+      "type": "circle",
+      "color": "#22c55e",
+      "x": 1426,
+      "y": 325,
+      "w": 66,
+      "h": 66
+    },
+    {
+      "id": "pre_2a",
+      "presetKey": "audio_btn",
+      "label": "配音2",
+      "type": "circle",
+      "color": "#22c55e",
+      "x": 1426,
+      "y": 511,
+      "w": 66,
+      "h": 66
+    },
+    {
+      "id": "pre_2b",
+      "presetKey": "audio_btn",
+      "label": "配音3",
+      "type": "circle",
+      "color": "#22c55e",
+      "x": 1426,
+      "y": 697,
+      "w": 66,
+      "h": 66
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148231,
+  "updatedAt": 1775209048842,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default"
+}

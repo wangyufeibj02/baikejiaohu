@@ -1,0 +1,85 @@
+{
+  "id": "f911faa3",
+  "name": "图片题干-图文3选项",
+  "questionType": "choice",
+  "stemType": "image",
+  "optionStyle": "imageText",
+  "variant": "image_imageText_3",
+  "optionCount": 3,
+  "description": "顶部题干大图 + 下方3个图片",
+  "elements": [
+    {
+      "id": "pre_2q",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "pre_2j",
+      "presetKey": "stem_image",
+      "label": "题干图",
+      "type": "rect",
+      "color": "#0ea5e9",
+      "x": 545,
+      "y": 241,
+      "w": 534,
+      "h": 300,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      }
+    },
+    {
+      "id": "pre_2k",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 224,
+      "y": 617,
+      "w": 332,
+      "h": 194,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_2l",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 646,
+      "y": 611,
+      "w": 332,
+      "h": 200,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_2m",
+      "presetKey": "option_image",
+      "label": "选项图3",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1068,
+      "y": 617,
+      "w": 332,
+      "h": 194,
+      "borderRadius": 30
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148232,
+  "updatedAt": 1775209004377,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default"
+}

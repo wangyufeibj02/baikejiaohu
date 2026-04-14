@@ -1,0 +1,56 @@
+{
+  "id": "458ac242",
+  "name": "语音题干-图片2选项",
+  "questionType": "choice",
+  "stemType": "audio",
+  "optionStyle": "image",
+  "variant": "audio_image_2",
+  "optionCount": 2,
+  "description": "语音引导，2个大图选项",
+  "elements": [
+    {
+      "id": "pre_3",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "pre_1",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 342,
+      "y": 345,
+      "w": 380,
+      "h": 380,
+      "borderRadius": 30
+    },
+    {
+      "id": "pre_2",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 902,
+      "y": 345,
+      "w": 380,
+      "h": 380,
+      "borderRadius": 30
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148228,
+  "updatedAt": 1775209070202,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default"
+}

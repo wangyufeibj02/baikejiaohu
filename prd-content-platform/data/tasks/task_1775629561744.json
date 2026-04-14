@@ -1,0 +1,29 @@
+{
+  "id": "task_1775629561744",
+  "prdId": "ac2d7903",
+  "prdName": "动物社群 · 第E1集",
+  "status": "done",
+  "progress": {
+    "total": 7,
+    "done": 7,
+    "failed": 0,
+    "current": "完成"
+  },
+  "summary": {
+    "images": 7,
+    "imagesDone": 7,
+    "imagesFailed": 0,
+    "audios": 0,
+    "audiosDone": 0,
+    "audiosFailed": 0,
+    "animations": 0,
+    "animationsDone": 0,
+    "animationsFailed": 0,
+    "configs": 1
+  },
+  "failures": [],
+  "downloadUrl": "/api/download/task_1775629561744",
+  "createdAt": 1775629561744,
+  "startedAt": 1775629561745,
+  "finishedAt": 1775629591038
+}

@@ -1,0 +1,59 @@
+{
+  "id": "85c92bfb",
+  "name": "语音题干-图片3选项",
+  "questionType": "choice",
+  "stemType": "audio",
+  "optionStyle": "image",
+  "description": "语音引导，3个图片选项",
+  "optionCount": 3,
+  "variant": "",
+  "status": "completed",
+  "elements": [
+    {
+      "id": "el_pgzb69y",
+      "presetKey": "option_image",
+      "label": "选项图",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 207,
+      "y": 314,
+      "w": 330,
+      "h": 390,
+      "borderRadius": 30,
+      "opacity": 1
+    },
+    {
+      "id": "el_uhjkrjs",
+      "presetKey": "option_image",
+      "label": "选项图",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 647,
+      "y": 314,
+      "w": 330,
+      "h": 390,
+      "borderRadius": 30,
+      "opacity": 1
+    },
+    {
+      "id": "el_1mqvupk",
+      "presetKey": "option_image",
+      "label": "选项图",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1087,
+      "y": 314,
+      "w": 330,
+      "h": 390,
+      "borderRadius": 30,
+      "opacity": 1
+    }
+  ],
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775193064220,
+  "updatedAt": 1775207487209,
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default"
+}

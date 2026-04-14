@@ -1,0 +1,228 @@
+{
+  "id": "164d2a22",
+  "name": "动物社群-第1集",
+  "productLine": "探索自然",
+  "episode": "E2",
+  "theme": "动物社群",
+  "backgroundStyle": "自然纪录片实拍风格",
+  "voiceStyle": "儿童科普风格，语速适中，亲切活泼",
+  "epics": [
+    {
+      "id": "fdmmx6",
+      "title": "Epic1",
+      "questions": [
+        {
+          "id": "E1-1",
+          "type": "单选题",
+          "stem": "在蜜蜂社群中，雄峰主要承担什么任务呢？",
+          "stemImage": "无",
+          "stemImageDesc": "",
+          "correctAnswer": "B",
+          "options": [
+            {
+              "label": "A",
+              "text": "产卵",
+              "mediaType": "文字",
+              "imageDesc": "一只蜂王正在产卵"
+            },
+            {
+              "label": "B",
+              "text": "完成交配",
+              "mediaType": "文字",
+              "imageDesc": "雄蜂和蜂王在交配"
+            },
+            {
+              "label": "C",
+              "text": "打扫蜂巢等",
+              "mediaType": "文字",
+              "imageDesc": "工蜂们正在清理蜂巢"
+            }
+          ],
+          "analysis": "",
+          "examPoint": "",
+          "templateId": "a4149ef8",
+          "effects": {
+            "opening": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            },
+            "correct": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            },
+            "wrong": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            }
+          },
+          "voiceLines": [],
+          "artStyle": "实拍"
+        },
+        {
+          "id": "E1-2",
+          "type": "多选题",
+          "stem": "在蜜蜂社群中，工蜂的主要任务有哪些呢？",
+          "stemImage": "无",
+          "stemImageDesc": "",
+          "correctAnswer": "A、B、C",
+          "options": [
+            {
+              "label": "A",
+              "text": "喂养幼虫",
+              "mediaType": "实拍图+文字",
+              "imageDesc": "工蜂们正在喂养幼虫"
+            },
+            {
+              "label": "B",
+              "text": "打扫蜂巢",
+              "mediaType": "实拍图+文字",
+              "imageDesc": "工蜂们正在清理蜂巢"
+            },
+            {
+              "label": "C",
+              "text": "采集花蜜",
+              "mediaType": "实拍图+文字",
+              "imageDesc": "工蜂们正在采集花蜜"
+            }
+          ],
+          "analysis": "",
+          "examPoint": "",
+          "templateId": "a4149ef8",
+          "effects": {
+            "opening": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            },
+            "correct": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            },
+            "wrong": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            }
+          },
+          "voiceLines": [],
+          "artStyle": "实拍"
+        }
+      ]
+    },
+    {
+      "id": "5m5xwe",
+      "title": "Epic2",
+      "questions": [
+        {
+          "id": "E2-1",
+          "type": "拖拽题",
+          "stem": "",
+          "stemImage": "无",
+          "stemImageDesc": "",
+          "correctAnswer": "",
+          "options": [
+            {
+              "label": "A",
+              "text": "",
+              "mediaType": "文字",
+              "imageDesc": ""
+            },
+            {
+              "label": "B",
+              "text": "",
+              "mediaType": "文字",
+              "imageDesc": ""
+            },
+            {
+              "label": "C",
+              "text": "",
+              "mediaType": "文字",
+              "imageDesc": ""
+            }
+          ],
+          "analysis": "",
+          "examPoint": "",
+          "templateId": "a4149ef8",
+          "effects": {
+            "opening": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            },
+            "correct": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            },
+            "wrong": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            }
+          },
+          "voiceLines": [],
+          "artStyle": "实拍"
+        },
+        {
+          "id": "E2-2",
+          "type": "单选题",
+          "stem": "宽吻海豚社群捕猎时，分工协作的形式是什么呢？",
+          "stemImage": "实拍图",
+          "stemImageDesc": "宽吻海豚们正在用泥环捕鱼法捕猎鱼群",
+          "correctAnswer": "C",
+          "options": [
+            {
+              "label": "A",
+              "text": "固定分工",
+              "mediaType": "文字",
+              "imageDesc": ""
+            },
+            {
+              "label": "B",
+              "text": "没有分工",
+              "mediaType": "文字",
+              "imageDesc": ""
+            },
+            {
+              "label": "C",
+              "text": "灵活分工",
+              "mediaType": "文字",
+              "imageDesc": ""
+            }
+          ],
+          "analysis": "",
+          "examPoint": "宽吻海豚的分工协作",
+          "templateId": "7635d30f",
+          "effects": {
+            "opening": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            },
+            "correct": {
+              "description": "宽吻海豚们正在用泥环捕鱼法捕猎鱼群的动态",
+              "duration": 4,
+              "target": "题干图"
+            },
+            "wrong": {
+              "description": "",
+              "duration": 4,
+              "target": ""
+            }
+          },
+          "voiceLines": [],
+          "artStyle": "实拍"
+        }
+      ]
+    }
+  ],
+  "status": "ready",
+  "createdAt": 1775558187450,
+  "updatedAt": 1775630548494,
+  "themeId": "b869e4a6",
+  "episodeTitle": ""
+}

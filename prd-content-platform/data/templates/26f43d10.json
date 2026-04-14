@@ -1,0 +1,176 @@
+{
+  "id": "26f43d10",
+  "name": "语音题干-图文3选项带配音",
+  "questionType": "choice",
+  "stemType": "audio",
+  "optionStyle": "imageText",
+  "variant": "audio_imageText_3_audio",
+  "optionCount": 3,
+  "description": "语音引导，3个图片+文字+配音按钮",
+  "elements": [
+    {
+      "id": "pre_12",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "pre_t",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 213,
+      "y": 369,
+      "w": 300,
+      "h": 217,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 0,
+        "bl": 0
+      }
+    },
+    {
+      "id": "pre_u",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 663,
+      "y": 369,
+      "w": 300,
+      "h": 217,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 0,
+        "bl": 0
+      }
+    },
+    {
+      "id": "pre_v",
+      "presetKey": "option_image",
+      "label": "选项图3",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1113,
+      "y": 369,
+      "w": 300,
+      "h": 217,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 0,
+        "bl": 0
+      }
+    },
+    {
+      "id": "pre_w",
+      "presetKey": "text_label",
+      "label": "选项A",
+      "type": "text",
+      "color": "#f59e0b",
+      "x": 211,
+      "y": 586,
+      "w": 300,
+      "h": 83,
+      "textContent": "选项A",
+      "fontSize": 32,
+      "textColor": "#1e3a8a",
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 30,
+        "bl": 30
+      }
+    },
+    {
+      "id": "pre_x",
+      "presetKey": "text_label",
+      "label": "选项B",
+      "type": "text",
+      "color": "#f59e0b",
+      "x": 663,
+      "y": 586,
+      "w": 300,
+      "h": 83,
+      "textContent": "选项B",
+      "fontSize": 32,
+      "textColor": "#1e3a8a",
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 30,
+        "bl": 30
+      }
+    },
+    {
+      "id": "pre_y",
+      "presetKey": "text_label",
+      "label": "选项C",
+      "type": "text",
+      "color": "#f59e0b",
+      "x": 1113,
+      "y": 586,
+      "w": 300,
+      "h": 83,
+      "textContent": "选项C",
+      "fontSize": 32,
+      "textColor": "#1e3a8a",
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 30,
+        "bl": 30
+      }
+    },
+    {
+      "id": "pre_z",
+      "presetKey": "audio_btn",
+      "label": "配音1",
+      "type": "circle",
+      "color": "#22c55e",
+      "x": 330,
+      "y": 679,
+      "w": 66,
+      "h": 66
+    },
+    {
+      "id": "pre_10",
+      "presetKey": "audio_btn",
+      "label": "配音2",
+      "type": "circle",
+      "color": "#22c55e",
+      "x": 780,
+      "y": 679,
+      "w": 66,
+      "h": 66
+    },
+    {
+      "id": "pre_11",
+      "presetKey": "audio_btn",
+      "label": "配音3",
+      "type": "circle",
+      "color": "#22c55e",
+      "x": 1230,
+      "y": 679,
+      "w": 66,
+      "h": 66
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148229,
+  "updatedAt": 1775209081753,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default"
+}

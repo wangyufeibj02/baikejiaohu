@@ -1,0 +1,78 @@
+{
+  "id": "acd2f5b0",
+  "name": "语音题干-文字2选项",
+  "questionType": "choice",
+  "stemType": "audio",
+  "optionStyle": "text",
+  "variant": "audio_text_3",
+  "optionCount": 3,
+  "description": "语音引导，2个纯文字选项",
+  "elements": [
+    {
+      "id": "pre_g",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "el_zy5ipfc",
+      "presetKey": "stem_image",
+      "label": "题干图",
+      "type": "rect",
+      "color": "#0ea5e9",
+      "x": 291,
+      "y": 241,
+      "w": 1042,
+      "h": 594,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      },
+      "opacity": 1
+    },
+    {
+      "id": "pre_d",
+      "presetKey": "text_label",
+      "label": "选项A",
+      "type": "text",
+      "color": "#f59e0b",
+      "x": 432,
+      "y": 410,
+      "w": 760,
+      "h": 90,
+      "textContent": "选项A",
+      "fontSize": 36,
+      "textColor": "#1e3a8a"
+    },
+    {
+      "id": "pre_e",
+      "presetKey": "text_label",
+      "label": "选项B",
+      "type": "text",
+      "color": "#f59e0b",
+      "x": 432,
+      "y": 580,
+      "w": 760,
+      "h": 90,
+      "textContent": "选项B",
+      "fontSize": 36,
+      "textColor": "#1e3a8a"
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148229,
+  "updatedAt": 1775209024850,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default"
+}

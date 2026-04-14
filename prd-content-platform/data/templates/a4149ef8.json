@@ -1,0 +1,245 @@
+{
+  "id": "a4149ef8",
+  "name": "语音题干-图文3选项",
+  "questionType": "choice",
+  "stemType": "audio",
+  "optionStyle": "imageText",
+  "variant": "audio_imageText_3",
+  "optionCount": 3,
+  "description": "语音引导，3个图片+文字标签选项",
+  "elements": [
+    {
+      "id": "pre_s",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      }
+    },
+    {
+      "id": "pre_m",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 210,
+      "y": 370,
+      "w": 300,
+      "h": 227,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 0,
+        "bl": 0
+      },
+      "groupId": "grp_5jx84",
+      "groupName": "选项1"
+    },
+    {
+      "id": "pre_n",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 660,
+      "y": 370,
+      "w": 300,
+      "h": 227,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 0,
+        "bl": 0
+      },
+      "groupId": "grp_zdkdx",
+      "groupName": "选项2"
+    },
+    {
+      "id": "pre_o",
+      "presetKey": "option_image",
+      "label": "选项图3",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1112,
+      "y": 370,
+      "w": 300,
+      "h": 227,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 0,
+        "bl": 0
+      },
+      "groupId": "grp_jusoo",
+      "groupName": "选项3"
+    },
+    {
+      "id": "pre_p",
+      "presetKey": "text_label",
+      "label": "选项A",
+      "type": "text",
+      "color": "#ffffff",
+      "x": 210,
+      "y": 597,
+      "w": 300,
+      "h": 73,
+      "textContent": "选项A",
+      "fontSize": 32,
+      "textColor": "#2f4d90",
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 30,
+        "bl": 30
+      },
+      "groupId": "grp_5jx84",
+      "groupName": "选项1",
+      "opacity": 1,
+      "fontFamily": "方正粗圆斑马英语"
+    },
+    {
+      "id": "pre_q",
+      "presetKey": "text_label",
+      "label": "选项B",
+      "type": "text",
+      "color": "#ffffff",
+      "x": 660,
+      "y": 597,
+      "w": 300,
+      "h": 73,
+      "textContent": "选项B",
+      "fontSize": 36,
+      "textColor": "#2f4d90",
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 30,
+        "bl": 30
+      },
+      "groupId": "grp_zdkdx",
+      "groupName": "选项2",
+      "fontWeight": "bold",
+      "fontFamily": "方正粗圆斑马英语"
+    },
+    {
+      "id": "pre_r",
+      "presetKey": "text_label",
+      "label": "选项C",
+      "type": "text",
+      "color": "#ffffff",
+      "x": 1112,
+      "y": 597,
+      "w": 300,
+      "h": 73,
+      "textContent": "选项C",
+      "fontSize": 36,
+      "textColor": "#2f4d90",
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 30,
+        "bl": 30
+      },
+      "groupId": "grp_jusoo",
+      "groupName": "选项3",
+      "fontWeight": "bold",
+      "fontFamily": "方正粗圆斑马英语"
+    },
+    {
+      "id": "el_tsv9kvv",
+      "presetKey": "animation_area",
+      "label": "动效区",
+      "type": "rect",
+      "color": "#a855f7",
+      "x": 310,
+      "y": 271,
+      "w": 1004,
+      "h": 554,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      },
+      "opacity": 1
+    },
+    {
+      "id": "el_jl3ci9c",
+      "presetKey": "anim_cover",
+      "label": "白边覆盖区",
+      "type": "rect",
+      "color": "#ff0088",
+      "x": 202,
+      "y": 271,
+      "w": 1220,
+      "h": 554,
+      "borderRadius": {
+        "tl": 10,
+        "tr": 10,
+        "br": 10,
+        "bl": 10
+      },
+      "opacity": 1
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148229,
+  "updatedAt": 1776079340303,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default",
+  "textStyle": {
+    "fontFamily": "方正粗圆斑马英语",
+    "fontSize": 36,
+    "fontColor": "#2f4d90",
+    "bgColor": "#ffffff",
+    "align": "center",
+    "letterSpacing": 7.5
+  },
+  "optionStates": {
+    "selected": {
+      "borderWidth": 6,
+      "borderColor": "#ffc933",
+      "borderOpacity": 1,
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffc933",
+      "fillOpacity": 0
+    },
+    "correct": {
+      "borderWidth": 6,
+      "borderColor": "#00cc66",
+      "borderOpacity": 1,
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#00cc66",
+      "fillOpacity": 0.2
+    }
+  },
+  "animationSettings": {
+    "fps": 10,
+    "usePalette": true,
+    "maxColors": 256,
+    "dither": "floyd_steinberg"
+  }
+}

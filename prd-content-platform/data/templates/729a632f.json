@@ -1,0 +1,107 @@
+{
+  "id": "729a632f",
+  "name": "语音题干-图片3选项",
+  "questionType": "choice",
+  "stemType": "audio",
+  "optionStyle": "image",
+  "variant": "audio_image_3",
+  "optionCount": 3,
+  "description": "语音引导，3个图片选项",
+  "elements": [
+    {
+      "id": "pre_7",
+      "presetKey": "bg_area",
+      "label": "背景",
+      "type": "rect",
+      "color": "#94a3b8",
+      "x": 0,
+      "y": 0,
+      "w": 1624,
+      "h": 1050
+    },
+    {
+      "id": "pre_4",
+      "presetKey": "option_image",
+      "label": "选项图1",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 207,
+      "y": 408,
+      "w": 330,
+      "h": 226,
+      "borderRadius": 30,
+      "opacity": 10
+    },
+    {
+      "id": "pre_5",
+      "presetKey": "option_image",
+      "label": "选项图2",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 647,
+      "y": 408,
+      "w": 330,
+      "h": 226,
+      "borderRadius": 30,
+      "opacity": 10
+    },
+    {
+      "id": "pre_6",
+      "presetKey": "option_image",
+      "label": "选项图3",
+      "type": "rect",
+      "color": "#6366f1",
+      "x": 1087,
+      "y": 408,
+      "w": 330,
+      "h": 226,
+      "borderRadius": 30,
+      "opacity": 10
+    }
+  ],
+  "isPreset": true,
+  "canvasWidth": 1624,
+  "canvasHeight": 1050,
+  "createdAt": 1775128148228,
+  "updatedAt": 1775628602669,
+  "status": "completed",
+  "safeTop": 240,
+  "safeBottom": 856,
+  "canvasPresetId": "default",
+  "textStyle": {
+    "fontFamily": "方正粗圆斑马英语",
+    "fontSize": 36,
+    "fontColor": "#2f4d90",
+    "bgColor": "#ffffff",
+    "align": "center",
+    "letterSpacing": 0
+  },
+  "optionStates": {
+    "selected": {
+      "borderWidth": 6,
+      "borderColor": "#ffc933",
+      "borderOpacity": 1,
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffc933",
+      "fillOpacity": 0
+    },
+    "correct": {
+      "borderWidth": 6,
+      "borderColor": "#00cc66",
+      "borderOpacity": 1,
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#00cc66",
+      "fillOpacity": 0.2
+    }
+  }
+}

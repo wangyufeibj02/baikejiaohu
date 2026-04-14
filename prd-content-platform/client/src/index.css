@@ -471,6 +471,7 @@ tr:hover td { background: rgba(74,158,245,0.02); }
   gap: 16px; height: calc(100vh - var(--nav-height) - 48px);
 }
 .editor-canvas-wrap {
+  order: 2;
   position: relative;
   background: var(--crystal);
   backdrop-filter: var(--crystal-blur);
@@ -481,6 +482,7 @@ tr:hover td { background: rgba(74,158,245,0.02); }
   display: flex; align-items: center; justify-content: center;
 }
 .editor-panel {
+  order: 1;
   background: var(--crystal);
   backdrop-filter: var(--crystal-blur);
   border: 1px solid var(--crystal-edge);

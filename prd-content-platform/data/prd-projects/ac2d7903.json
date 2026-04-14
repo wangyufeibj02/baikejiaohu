@@ -17,25 +17,25 @@
           "stem": "",
           "stemImage": "无",
           "stemImageDesc": "",
-          "correctAnswer": "",
-          "templateId": "",
+          "correctAnswer": "B",
+          "templateId": "a4149ef8",
           "artStyle": "",
           "options": [
             {
               "label": "A",
-              "text": "",
+              "text": "一只老虎",
               "mediaType": "实拍图+文字",
               "imageDesc": ""
             },
             {
               "label": "B",
-              "text": "",
+              "text": "一只狗熊",
               "mediaType": "实拍图+文字",
               "imageDesc": ""
             },
             {
               "label": "C",
-              "text": "",
+              "text": "一只蚂蚁",
               "mediaType": "实拍图+文字",
               "imageDesc": ""
             }
@@ -47,8 +47,8 @@
               "duration": 4
             },
             "correct": {
-              "target": "",
-              "description": "",
+              "target": "动效区",
+              "description": "一只老虎在吃蚂蚁",
               "duration": 4
             },
             "wrong": {
@@ -57,7 +57,9 @@
               "duration": 4
             }
           },
-          "voiceLines": []
+          "voiceLines": [
+            "老虎吃不到蚂蚁"
+          ]
         }
       ]
     },
@@ -69,6 +71,6 @@
   ],
   "status": "done",
   "createdAt": 1775210092982,
-  "updatedAt": 1776138986814,
+  "updatedAt": 1776142059296,
   "themeId": "b869e4a6"
 }

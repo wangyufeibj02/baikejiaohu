@@ -28,14 +28,19 @@ function loadTemplate(id) {
   return existsSync(fp) ? JSON.parse(readFileSync(fp, 'utf-8')) : null;
 }
 
-function findElementSize(tpl, targetLabel) {
+function findElementInfo(tpl, targetLabel) {
   if (!tpl || !targetLabel) return null;
   const el = tpl.elements?.find(e => {
     const l = (e.label || '').toLowerCase();
     const t = targetLabel.toLowerCase();
     return l.includes(t) || t.includes(l);
   });
-  return el ? { w: el.w, h: el.h } : null;
+  if (!el) return null;
+  const br = el.borderRadius;
+  let radius = 0;
+  if (typeof br === 'number') radius = br;
+  else if (br && typeof br === 'object') radius = Math.max(br.tl || 0, br.tr || 0, br.br || 0, br.bl || 0);
+  return { x: el.x, y: el.y, w: el.w, h: el.h, borderRadius: radius, presetKey: el.presetKey || '' };
 }
 
 function extractElData(el) {
@@ -263,16 +268,29 @@ router.post('/:id/produce', (req, res) => {
 
       const buildAnim = (key, eff) => {
         if (!eff?.description) return;
-        const sz = findElementSize(tpl, eff.target);
-        assets.animations.push({
+        const info = findElementInfo(tpl, eff.target);
+        const animData = {
           name: `${q.id}_${key}_anim`,
           description: eff.description,
           duration: eff.duration || 4,
           target: eff.target,
           referenceUrl: eff.referenceUrl || null,
-          width: sz?.w || null,
-          height: sz?.h || null,
-        });
+          width: info?.w || null,
+          height: info?.h || null,
+          borderRadius: info?.borderRadius || 0,
+          padding: null,
+        };
+        if (info?.presetKey === 'animation_area' && tpl?.elements) {
+          const cover = tpl.elements.find(e => e.presetKey === 'anim_cover');
+          if (cover) {
+            const lp = Math.max(0, info.x - cover.x);
+            const rp = Math.max(0, (cover.x + cover.w) - (info.x + info.w));
+            if (lp > 0 || rp > 0) {
+              animData.padding = { leftPad: lp, rightPad: rp, totalWidth: lp + info.w + rp };
+            }
+          }
+        }
+        assets.animations.push(animData);
       };
       buildAnim('opening', q.effects?.opening);
       buildAnim('correct', q.effects?.correct);

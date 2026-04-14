@@ -48,7 +48,8 @@ function buildConfigFromTemplate(question, tpl) {
   const audioEls = els.filter(e => e.presetKey === 'audio_btn' || (e.label || '').includes('配音'));
   const bgEls = els.filter(e => e.presetKey === 'bg_area' || (e.label || '').includes('背景'));
   const collideEls = els.filter(e => e.presetKey === 'collide_zone' || (e.label || '').includes('碰撞'));
-  const animEls = els.filter(e => e.presetKey === 'animation_area' || (e.label || '').includes('动效'));
+  const animEls = els.filter(e => e.presetKey === 'animation_area' || ((e.label || '').includes('动效') && e.presetKey !== 'anim_cover'));
+  const coverEl = els.find(e => e.presetKey === 'anim_cover');
 
   bgEls.forEach((el, i) => {
     config.normalBackgroundPictures.push(rect(`${qId}_bg${i > 0 ? '_' + (i + 1) : ''}`, el.x, el.y, el.w, el.h));
@@ -72,7 +73,16 @@ function buildConfigFromTemplate(question, tpl) {
   });
 
   animEls.forEach((el, i) => {
-    config.startAnimations.push(rect(`${qId}_anim_${i + 1}`, el.x, el.y, el.w, el.h));
+    let ax = el.x, aw = el.w;
+    if (coverEl) {
+      const lp = Math.max(0, el.x - coverEl.x);
+      const rp = Math.max(0, (coverEl.x + coverEl.w) - (el.x + el.w));
+      if (lp > 0 || rp > 0) {
+        ax = el.x - lp;
+        aw = lp + el.w + rp;
+      }
+    }
+    config.startAnimations.push(rect(`${qId}_anim_${i + 1}`, ax, el.y, aw, el.h));
   });
 
   const images = question.assets?.images || [];

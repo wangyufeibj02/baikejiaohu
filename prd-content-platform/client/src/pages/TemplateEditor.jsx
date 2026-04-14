@@ -18,6 +18,7 @@ const ELEMENT_PRESETS = {
   bg_area:      { label: '背景区', w: 1624, h: 1050, color: '#94a3b8', type: 'rect' },
   collide_zone: { label: '碰撞区', w: 230, h: 230, color: '#ef4444', type: 'rect' },
   animation_area: { label: '动效区', w: 400, h: 300, color: '#a855f7', type: 'rect' },
+  anim_cover:     { label: '白边覆盖区', w: 1200, h: 300, color: '#d946ef', type: 'rect' },
 };
 
 const FONT_OPTIONS = [

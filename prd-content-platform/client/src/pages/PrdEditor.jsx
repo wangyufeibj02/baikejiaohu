@@ -5,7 +5,7 @@ const QUESTION_TYPES = ['单选题', '多选题', '拖拽题', '连线题', '点
 const MEDIA_TYPES = ['文字', '文字+拼音', '实拍图+文字', '2d插画+文字', '实拍图', '2d插画', '实拍图+语音', '2d插画+语音', '文字+语音'];
 const STEM_MEDIA_TYPES = ['无', '实拍图', '2d插画'];
 const VOICE_TIMINGS = ['进入时自动播放', '点击播放按钮', '无'];
-const EFFECT_TARGETS = ['无', '题干图', '选项A', '选项B', '选项C', '选项D', '背景', '全屏'];
+const EFFECT_TARGETS = ['无', '题干图', '选项A', '选项B', '选项C', '选项D', '背景', '全屏', '动效区'];
 const BG_STYLES = ['自然纪录片实拍风格', '卡通2D插画', '低幼可爱插画', '写实3D渲染'];
 
 const TYPE_TO_QT = {

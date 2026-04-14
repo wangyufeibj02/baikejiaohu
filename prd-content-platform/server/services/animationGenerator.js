@@ -2,6 +2,7 @@ import { join } from 'path';
 import { mkdirSync, writeFileSync, unlinkSync } from 'fs';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { createCanvas } from 'canvas';
 import { seedanceTextToVideo, seedanceImageToVideo, downloadFile } from './modaiClient.js';
 
 const execFileAsync = promisify(execFile);
@@ -15,14 +16,83 @@ function sizeToAspect(w, h) {
   return '1:1';
 }
 
-async function videoToApng(videoPath, outputPath, w, h, fps = 15) {
-  const scaleFilter = (w && h) ? `fps=${fps},scale=${w}:${h}:flags=lanczos` : `fps=${fps},scale=360:-1:flags=lanczos`;
+function createRoundedMask(w, h, radius, outputPath) {
+  const cvs = createCanvas(w, h);
+  const ctx = cvs.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(radius, 0);
+  ctx.lineTo(w - radius, 0);
+  ctx.arcTo(w, 0, w, radius, radius);
+  ctx.lineTo(w, h - radius);
+  ctx.arcTo(w, h, w - radius, h, radius);
+  ctx.lineTo(radius, h);
+  ctx.arcTo(0, h, 0, h - radius, radius);
+  ctx.lineTo(0, radius);
+  ctx.arcTo(0, 0, radius, 0, radius);
+  ctx.closePath();
+  ctx.fill();
+  writeFileSync(outputPath, cvs.toBuffer('image/png'));
+}
+
+async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
+  const fps = opts.fps || 15;
+  const borderRadius = opts.borderRadius || 0;
+  const padding = opts.padding || null;
+
+  const needsMask = borderRadius > 0 && w && h;
+  const needsPad = padding && padding.totalWidth > 0;
+
+  if (!needsMask && !needsPad) {
+    const scaleFilter = (w && h) ? `fps=${fps},scale=${w}:${h}:flags=lanczos` : `fps=${fps},scale=360:-1:flags=lanczos`;
+    await execFileAsync('ffmpeg', [
+      '-y', '-i', videoPath,
+      '-vf', scaleFilter,
+      '-plays', '0',
+      outputPath,
+    ], { timeout: 120_000 });
+    return;
+  }
+
+  const maskPath = outputPath.replace(/\.apng$/, '_mask.png');
+  let filterParts = [];
+  let inputs = ['-y', '-i', videoPath];
+
+  if (needsMask) {
+    createRoundedMask(w, h, borderRadius, maskPath);
+    inputs.push('-i', maskPath);
+  }
+
+  filterParts.push(`[0:v]fps=${fps},scale=${w}:${h}:flags=lanczos,format=rgba[scaled]`);
+
+  if (needsMask) {
+    filterParts.push(`[1:v]format=rgba,alphaextract[alpha]`);
+    filterParts.push(`[scaled][alpha]alphamerge[masked]`);
+  }
+
+  const maskedLabel = needsMask ? 'masked' : 'scaled';
+
+  if (needsPad) {
+    const tw = padding.totalWidth;
+    const lp = padding.leftPad;
+    filterParts.push(`color=white:s=${tw}x${h}:d=999,format=rgba[bg]`);
+    filterParts.push(`[bg][${maskedLabel}]overlay=${lp}:0:shortest=1[out]`);
+  } else {
+    filterParts.push(`color=white:s=${w}x${h}:d=999,format=rgba[wbg]`);
+    filterParts.push(`[wbg][${maskedLabel}]overlay=0:0:shortest=1[out]`);
+  }
+
+  const filterComplex = filterParts.join(';');
   await execFileAsync('ffmpeg', [
-    '-y', '-i', videoPath,
-    '-vf', scaleFilter,
+    ...inputs,
+    '-filter_complex', filterComplex,
+    '-map', '[out]',
     '-plays', '0',
     outputPath,
   ], { timeout: 120_000 });
+
+  try { unlinkSync(maskPath); } catch {}
 }
 
 export async function generateAnimations(analysisResult, taskDir) {
@@ -72,15 +142,18 @@ export async function generateAnimations(analysisResult, taskDir) {
         const videoBuffer = await downloadFile(videoResult.url);
         writeFileSync(tmpVideo, videoBuffer);
 
-        console.log(`[动效] 转换 APNG (${aw || 360}x${ah || 'auto'}) ...`);
-        await videoToApng(tmpVideo, outPath, aw, ah);
+        const borderRadius = anim.borderRadius || 0;
+        const padding = anim.padding || null;
+        const finalW = padding ? padding.totalWidth : (aw || 360);
+        console.log(`[动效] 转换 APNG (${aw || 360}x${ah || 'auto'}, r=${borderRadius}${padding ? `, pad=${padding.leftPad}+${padding.rightPad}→${padding.totalWidth}` : ''}) ...`);
+        await videoToApng(tmpVideo, outPath, aw, ah, { fps: 15, borderRadius, padding });
 
         try { unlinkSync(tmpVideo); } catch {}
 
         results.push({
           questionId: question.id, name: anim.name,
           description: anim.description, duration,
-          size: (aw && ah) ? `${aw}x${ah}` : null,
+          size: (aw && ah) ? `${finalW}x${ah}` : null,
           path: outPath, status: 'done',
         });
         console.log(`[动效] 完成 ${question.id}/${anim.name}.apng`);

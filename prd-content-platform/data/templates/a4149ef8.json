@@ -13,7 +13,7 @@
       "presetKey": "bg_area",
       "label": "背景",
       "type": "rect",
-      "color": "#94a3b8",
+      "color": "#ffffff",
       "x": 0,
       "y": 0,
       "w": 1624,
@@ -170,7 +170,7 @@
         "br": 30,
         "bl": 30
       },
-      "opacity": 1
+      "opacity": 0.2
     },
     {
       "id": "el_jl3ci9c",
@@ -188,14 +188,14 @@
         "br": 10,
         "bl": 10
       },
-      "opacity": 1
+      "opacity": 0.2
     }
   ],
   "isPreset": true,
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148229,
-  "updatedAt": 1776079340303,
+  "updatedAt": 1776138950044,
   "status": "completed",
   "safeTop": 240,
   "safeBottom": 856,

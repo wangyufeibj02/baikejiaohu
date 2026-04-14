@@ -17,72 +17,58 @@
           "stem": "",
           "stemImage": "无",
           "stemImageDesc": "",
-          "correctAnswer": "B",
+          "correctAnswer": "",
+          "templateId": "",
+          "artStyle": "",
           "options": [
             {
               "label": "A",
-              "text": "一只老虎",
+              "text": "",
               "mediaType": "实拍图+文字",
-              "imageDesc": "一只老虎",
-              "source": "ai",
-              "uploadUrl": ""
+              "imageDesc": ""
             },
             {
               "label": "B",
-              "text": "三只象",
+              "text": "",
               "mediaType": "实拍图+文字",
-              "imageDesc": "三只象"
+              "imageDesc": ""
             },
             {
               "label": "C",
-              "text": "一匹马和一匹驴",
+              "text": "",
               "mediaType": "实拍图+文字",
-              "imageDesc": "一匹马和一匹驴"
+              "imageDesc": ""
             }
           ],
-          "analysis": "",
-          "examPoint": "",
-          "templateId": "a4149ef8",
           "effects": {
             "opening": {
+              "target": "",
               "description": "",
-              "duration": 4,
-              "target": "动效区"
+              "duration": 4
             },
             "correct": {
-              "description": "三只大象戏水",
-              "duration": 4,
-              "target": "动效区"
+              "target": "",
+              "description": "",
+              "duration": 4
             },
             "wrong": {
+              "target": "",
               "description": "",
-              "duration": 4,
-              "target": "动效区"
+              "duration": 4
             }
           },
-          "voiceover": {
-            "stem": {
-              "text": "",
-              "timing": "进入时自动播放"
-            },
-            "options": [],
-            "analysis": {
-              "text": "",
-              "timing": "答对后播放"
-            },
-            "errorHint": {
-              "text": "",
-              "timing": "答错后播放"
-            }
-          },
-          "voiceLines": [],
-          "artStyle": "实拍"
+          "voiceLines": []
         }
       ]
+    },
+    {
+      "id": "ep_mny3afw8",
+      "title": "Epic2",
+      "questions": []
     }
   ],
   "status": "done",
   "createdAt": 1775210092982,
-  "updatedAt": 1776079492418,
+  "updatedAt": 1776138986814,
   "themeId": "b869e4a6"
 }

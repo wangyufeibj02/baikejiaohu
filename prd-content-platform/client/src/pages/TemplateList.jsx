@@ -1,266 +1,435 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 
-const CARD_W = 280;
-const STEM_LABELS = { audio: '语音题干', text: '文字题干', image: '图片题干' };
-const STYLE_LABELS = { image: '图片', text: '文字', imageText: '图文' };
-const STEM_FILTERS = [
-  { key: '', label: '全部' },
-  { key: 'audio', label: '语音题干' },
-  { key: 'text', label: '文字题干' },
-  { key: 'image', label: '图片题干' },
-];
+const CANVAS_W = 1624;
+const CANVAS_H = 1050;
+const THUMB_W = 320;
+const THUMB_H = Math.round(THUMB_W * CANVAS_H / CANVAS_W);
+
+function hexToRgba(hex, a) {
+  const c = hex.replace('#', '');
+  return `rgba(${parseInt(c.substring(0, 2), 16) || 0},${parseInt(c.substring(2, 4), 16) || 0},${parseInt(c.substring(4, 6), 16) || 0},${a})`;
+}
 
 function roundRect(ctx, x, y, w, h, r) {
-  r = Math.min(r || 0, w / 2, h / 2);
   ctx.beginPath();
-  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
   ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
   ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
   ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
   ctx.closePath();
 }
 
-function drawThumb(canvas, tpl) {
+function drawThumb(canvas, elements) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const cw = tpl.canvasWidth || 1624, ch = tpl.canvasHeight || 1050;
-  const s = CARD_W / cw;
-  const th = Math.round(ch * s);
-  canvas.width = CARD_W; canvas.height = th;
+  const s = THUMB_W / CANVAS_W;
+  ctx.clearRect(0, 0, THUMB_W, THUMB_H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, THUMB_W, THUMB_H);
+  ctx.fillStyle = '#f5f5f5';
+  ctx.fillRect(0, 0, THUMB_W, 150 * s);
+  ctx.fillRect(0, 900 * s, THUMB_W, (CANVAS_H - 900) * s);
+  ctx.strokeStyle = 'rgba(239,68,68,0.25)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(0, 150 * s); ctx.lineTo(THUMB_W, 150 * s);
+  ctx.moveTo(0, 900 * s); ctx.lineTo(THUMB_W, 900 * s);
+  ctx.stroke(); ctx.setLineDash([]);
 
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, CARD_W, th);
-
-  if (tpl.safeTop != null || tpl.safeBottom != null) {
-    const st = (tpl.safeTop || 150) * s, sb = (tpl.safeBottom || 900) * s;
-    ctx.fillStyle = 'rgba(0,0,0,0.02)'; ctx.fillRect(0, 0, CARD_W, st); ctx.fillRect(0, sb, CARD_W, th - sb);
-    ctx.fillStyle = 'rgba(56,189,248,0.04)'; ctx.fillRect(0, st, CARD_W, sb - st);
-    ctx.strokeStyle = 'rgba(239,68,68,0.3)'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
-    ctx.beginPath(); ctx.moveTo(0, st); ctx.lineTo(CARD_W, st); ctx.moveTo(0, sb); ctx.lineTo(CARD_W, sb); ctx.stroke(); ctx.setLineDash([]);
-  }
-
-  (tpl.elements || []).forEach(el => {
-    ctx.save();
-    ctx.globalAlpha = (el.opacity ?? 0.3) * 0.7;
+  for (const el of (elements || [])) {
+    if (el.presetKey === 'bg_area') continue;
     const ex = el.x * s, ey = el.y * s, ew = el.w * s, eh = el.h * s;
-    const c = el.color || '#64748b';
-    const br = typeof el.borderRadius === 'object'
-      ? Math.max(el.borderRadius.tl || 0, el.borderRadius.tr || 0, el.borderRadius.br || 0, el.borderRadius.bl || 0)
-      : (el.borderRadius || 0);
+    ctx.save();
     if (el.type === 'circle') {
-      ctx.fillStyle = c; ctx.beginPath();
-      ctx.ellipse(ex + ew / 2, ey + eh / 2, ew / 2, eh / 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex + ew / 2, ey + eh / 2, Math.min(ew, eh) / 2, 0, Math.PI * 2);
+      ctx.fillStyle = hexToRgba(el.color, 0.3); ctx.fill();
+      ctx.strokeStyle = el.color; ctx.lineWidth = 1; ctx.stroke();
+    } else if (el.type === 'text') {
+      ctx.fillStyle = hexToRgba(el.color, 0.15);
+      roundRect(ctx, ex, ey, ew, eh, 3 * s); ctx.fill();
+      ctx.strokeStyle = el.color; ctx.lineWidth = 0.8;
+      roundRect(ctx, ex, ey, ew, eh, 3 * s); ctx.stroke();
+      ctx.fillStyle = el.textColor || '#1e3a8a';
+      ctx.font = `bold ${Math.max(8, (el.fontSize || 28) * s)}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(el.textContent || el.label, ex + ew / 2, ey + eh / 2, ew);
     } else {
-      ctx.fillStyle = c; roundRect(ctx, ex, ey, ew, eh, br * s); ctx.fill();
+      ctx.fillStyle = hexToRgba(el.color, 0.2);
+      roundRect(ctx, ex, ey, ew, eh, 4 * s); ctx.fill();
+      ctx.strokeStyle = el.color; ctx.lineWidth = 1;
+      roundRect(ctx, ex, ey, ew, eh, 4 * s); ctx.stroke();
     }
     ctx.restore();
-  });
+  }
 }
 
-function Thumb({ template }) {
+function ThumbCanvas({ elements }) {
   const ref = useRef(null);
-  useEffect(() => { drawThumb(ref.current, template); }, [template]);
-  return <canvas ref={ref} style={{ width: '100%', height: 'auto', borderRadius: 8 }} />;
+  useEffect(() => { drawThumb(ref.current, elements); }, [elements]);
+  return <canvas ref={ref} width={THUMB_W} height={THUMB_H} style={{ width: '100%', height: 'auto', borderRadius: 8 }} />;
 }
+
+// ─── Classification helpers ─────────────────────────────
+
+const STEM_LABELS = { audio: '语音题干', text: '文字题干', image: '图片题干', free: '自由操作区' };
+const STYLE_LABELS = { image: '图片选项', text: '文字选项', imageText: '图文选项' };
+
+function detectStemType(t) {
+  if (t.stemType) return t.stemType;
+  const els = t.elements || [];
+  if (els.some(e => e.presetKey === 'stem_image')) return 'image';
+  if (els.some(e => e.presetKey === 'stem_text')) return 'text';
+  return 'audio';
+}
+
+function detectOptionStyle(t) {
+  if (t.optionStyle) return t.optionStyle;
+  const els = t.elements || [];
+  const hasImages = els.some(e => e.presetKey === 'option_image');
+  const hasTexts = els.some(e => e.presetKey === 'text_label');
+  if (hasImages && hasTexts) return 'imageText';
+  if (hasImages) return 'image';
+  if (hasTexts) return 'text';
+  return 'image';
+}
+
+function getTags(t) {
+  const tags = [];
+  const stem = detectStemType(t);
+  const style = detectOptionStyle(t);
+  tags.push(STEM_LABELS[stem] || stem);
+  tags.push(STYLE_LABELS[style] || style);
+  const els = t.elements || [];
+  if (els.some(e => e.presetKey === 'audio_btn')) tags.push('带配音');
+  const optCount = Math.max(
+    els.filter(e => e.presetKey === 'option_image').length,
+    els.filter(e => e.presetKey === 'text_label').length,
+  );
+  if (optCount > 0) tags.push(`${optCount}选项`);
+  return tags;
+}
+
+// ─── Family (top-level type) ────────────────────────────
+
+const QUESTION_FAMILIES = [
+  { key: 'all', label: '全部' },
+  { key: 'choice', label: '选择题' },
+  { key: 'connect', label: '连线题' },
+  { key: 'drag', label: '拖拽题' },
+  { key: 'hotspot', label: '点选题' },
+  { key: 'judge', label: '判断题' },
+  { key: 'other', label: '其他' },
+];
+
+const FAMILY_MAP = {
+  choice: 'choice',
+  singleChoice: 'choice',
+  multiChoice: 'choice',
+  connect: 'connect',
+  drag: 'drag',
+  hotspot: 'hotspot',
+  judge: 'judge',
+};
+
+function getFamily(t) {
+  return FAMILY_MAP[t.questionType] || 'other';
+}
+
+function matchFamily(t, key) {
+  if (key === 'all') return true;
+  return getFamily(t) === key;
+}
+
+// ─── Sub-filter definitions ─────────────────────────────
+
+const STEM_FILTERS = [
+  { key: 'all', label: '全部题干' },
+  { key: 'audio', label: '语音题干' },
+  { key: 'text', label: '文字题干' },
+  { key: 'image', label: '图片题干' },
+  { key: 'free', label: '自由操作区' },
+];
+
+const STYLE_FILTERS = [
+  { key: 'all', label: '全部选项' },
+  { key: 'image', label: '图片选项' },
+  { key: 'text', label: '文字选项' },
+  { key: 'imageText', label: '图文选项' },
+];
+
+// ─── Component ──────────────────────────────────────────
 
 export default function TemplateList() {
   const [templates, setTemplates] = useState([]);
-  const [filter, setFilter] = useState('');
-  const [search, setSearch] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', stemType: 'audio', optionStyle: 'imageText', optionCount: 3 });
-  const navigate = useNavigate();
+  const [seeding, setSeeding] = useState(false);
+  const [activeFamily, setActiveFamily] = useState('all');
+  const [stemFilter, setStemFilter] = useState('all');
+  const [styleFilter, setStyleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchText, setSearchText] = useState('');
 
-  const load = useCallback(() => {
-    fetch('/api/templates').then(r => r.json()).then(d => { if (d.success) setTemplates(d.data); });
+  const loadTemplates = useCallback(() => {
+    fetch('/api/templates').then(r => r.json()).then(d => {
+      if (d.success) setTemplates(d.data);
+    }).catch(() => {});
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadTemplates(); }, [loadTemplates]);
 
-  const filtered = templates.filter(t => {
-    if (filter && t.stemType !== filter) return false;
-    if (search && !(t.name || '').includes(search) && !(t.description || '').includes(search)) return false;
-    return true;
-  });
+  const familyCounts = useMemo(() => {
+    const counts = {};
+    for (const f of QUESTION_FAMILIES) counts[f.key] = templates.filter(t => matchFamily(t, f.key)).length;
+    return counts;
+  }, [templates]);
 
-  async function handleDelete(e, id) {
-    e.preventDefault(); e.stopPropagation();
-    if (!confirm('确定删除此模板？')) return;
-    const res = await fetch(`/api/templates/${id}`, { method: 'DELETE' });
-    const json = await res.json();
-    if (json.success) load(); else alert(json.error || '删除失败');
-  }
+  const visibleFamilies = useMemo(() =>
+    QUESTION_FAMILIES.filter(f => f.key === 'all' || familyCounts[f.key] > 0),
+  [familyCounts]);
 
-  async function handleCreate() {
-    if (!form.name.trim()) return alert('请输入模板名称');
-    const variant = `${form.stemType}_${form.optionStyle}_${form.optionCount}`;
-    const body = {
-      name: form.name.trim(),
-      questionType: 'choice',
-      stemType: form.stemType,
-      optionStyle: form.optionStyle,
-      variant,
-      optionCount: form.optionCount,
-      description: `${STEM_LABELS[form.stemType]}，${form.optionCount}个${STYLE_LABELS[form.optionStyle]}选项`,
-      elements: [],
-      canvasWidth: 1624,
-      canvasHeight: 1050,
-    };
-    const res = await fetch('/api/templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const json = await res.json();
-    if (json.success) {
-      setShowCreate(false);
-      setForm({ name: '', stemType: 'audio', optionStyle: 'imageText', optionCount: 3 });
-      load();
-      if (json.data?.id) navigate(`/templates/${json.data.id}`);
-    } else {
-      alert(json.error || '创建失败');
+  const familyFiltered = useMemo(() =>
+    templates.filter(t => matchFamily(t, activeFamily)),
+  [templates, activeFamily]);
+
+  const showSubFilters = activeFamily === 'choice';
+
+  const stemCounts = useMemo(() => {
+    if (!showSubFilters) return {};
+    const counts = {};
+    for (const s of STEM_FILTERS) {
+      counts[s.key] = s.key === 'all'
+        ? familyFiltered.length
+        : familyFiltered.filter(t => detectStemType(t) === s.key).length;
     }
+    return counts;
+  }, [familyFiltered, showSubFilters]);
+
+  const visibleStemFilters = useMemo(() =>
+    STEM_FILTERS.filter(s => s.key === 'all' || (stemCounts[s.key] || 0) > 0),
+  [stemCounts]);
+
+  const styleCounts = useMemo(() => {
+    if (!showSubFilters) return {};
+    let base = familyFiltered;
+    if (stemFilter !== 'all') base = base.filter(t => detectStemType(t) === stemFilter);
+    const counts = {};
+    for (const s of STYLE_FILTERS) {
+      counts[s.key] = s.key === 'all'
+        ? base.length
+        : base.filter(t => detectOptionStyle(t) === s.key).length;
+    }
+    return counts;
+  }, [familyFiltered, stemFilter, showSubFilters]);
+
+  const visibleStyleFilters = useMemo(() =>
+    STYLE_FILTERS.filter(s => s.key === 'all' || (styleCounts[s.key] || 0) > 0),
+  [styleCounts]);
+
+  const statusCounts = useMemo(() => {
+    const completed = templates.filter(t => t.status === 'completed').length;
+    return { all: templates.length, completed, draft: templates.length - completed };
+  }, [templates]);
+
+  const filtered = useMemo(() => {
+    let list = familyFiltered;
+    if (stemFilter !== 'all') list = list.filter(t => detectStemType(t) === stemFilter);
+    if (styleFilter !== 'all') list = list.filter(t => detectOptionStyle(t) === styleFilter);
+    if (statusFilter === 'completed') list = list.filter(t => t.status === 'completed');
+    else if (statusFilter === 'draft') list = list.filter(t => t.status !== 'completed');
+    if (searchText.trim()) {
+      const q = searchText.trim().toLowerCase();
+      list = list.filter(t =>
+        (t.name || '').toLowerCase().includes(q) ||
+        (t.description || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [familyFiltered, stemFilter, styleFilter, statusFilter, searchText]);
+
+  function handleDelete(id) {
+    if (!confirm('确定删除此模板？')) return;
+    fetch(`/api/templates/${id}`, { method: 'DELETE' }).then(r => r.json()).then(d => {
+      if (d.success) setTemplates(prev => prev.filter(t => t.id !== id));
+    });
   }
+
+  async function handleSeedPresets() {
+    setSeeding(true);
+    try {
+      const res = await fetch('/api/templates/seed', { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        loadTemplates();
+        if (json.data.added > 0) alert(`已加载 ${json.data.added} 个预设模板`);
+        else alert('所有预设模板已存在，无需重复加载');
+      }
+    } catch (err) { alert('加载预设失败: ' + err.message); }
+    finally { setSeeding(false); }
+  }
+
+  const familyLabel = (qt) => {
+    const fam = FAMILY_MAP[qt] || qt;
+    const match = QUESTION_FAMILIES.find(f => f.key === fam);
+    return match ? match.label : qt;
+  };
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
         <div>
           <h1 className="page-title">题型模板</h1>
-          <p className="page-subtitle" style={{ marginBottom: 0 }}>
-            管理题板布局模板，支持多种题干类型和选项样式
-          </p>
+          <p className="page-subtitle" style={{ marginBottom: 0 }}>设计题板布局，定义选项尺寸与文字规范</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ 新建模板</button>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-        {STEM_FILTERS.map(f => (
-          <button
-            key={f.key}
-            className={`btn btn-sm ${filter === f.key ? 'btn-primary' : 'btn-glass'}`}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link to="/canvas">
+            <button className="btn btn-glass">画布</button>
+          </Link>
+          <button className="btn btn-glass" onClick={handleSeedPresets} disabled={seeding}>
+            {seeding ? '加载中...' : '加载预设模板'}
           </button>
-        ))}
-        <span style={{ flex: 1 }} />
-        <input
-          className="glass-input"
-          style={{ width: 200 }}
-          placeholder="搜索模板..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+          <Link to="/templates/new">
+            <button className="btn btn-primary">+ 新建模板</button>
+          </Link>
+        </div>
       </div>
 
-      <div className="template-grid">
-        {filtered.map(t => (
-          <div
-            key={t.id}
-            className="template-card"
-            style={{ cursor: 'pointer' }}
-            onClick={() => navigate(`/templates/${t.id}`)}
-          >
-            <div className="template-card-thumb">
-              <Thumb template={t} />
-            </div>
-            <div className="template-card-body">
-              <div className="template-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {t.name}
-              </div>
-              <div style={{ display: 'flex', gap: 4, marginTop: 4, flexWrap: 'wrap' }}>
-                <span style={{
-                  fontSize: 10, padding: '1px 6px', borderRadius: 4,
-                  background: 'rgba(99,102,241,0.08)', color: '#6366f1', fontWeight: 500,
-                }}>{STEM_LABELS[t.stemType] || t.stemType}</span>
-                <span style={{
-                  fontSize: 10, padding: '1px 6px', borderRadius: 4,
-                  background: 'rgba(56,189,248,0.08)', color: 'var(--ice-border)', fontWeight: 500,
-                }}>{STYLE_LABELS[t.optionStyle] || t.optionStyle}</span>
-                <span style={{
-                  fontSize: 10, padding: '1px 6px', borderRadius: 4,
-                  background: 'rgba(16,185,129,0.08)', color: '#10b981', fontWeight: 500,
-                }}>{t.optionCount}选项</span>
-              </div>
-              {t.description && (
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.4 }}>
-                  {t.description}
-                </div>
-              )}
-              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                <span style={{ flex: 1 }} />
-                <button className="btn btn-glass btn-sm" onClick={e => { e.stopPropagation(); navigate(`/templates/${t.id}`); }}>
-                  编辑
-                </button>
+      {/* Filter bar */}
+      {templates.length > 0 && (
+        <div className="filter-bar">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Level 1: question family */}
+            <div className="filter-tabs">
+              {visibleFamilies.map(f => (
                 <button
-                  className="btn btn-sm"
-                  style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.15)', fontSize: 11, borderRadius: 6, padding: '3px 10px', cursor: 'pointer' }}
-                  onClick={e => handleDelete(e, t.id)}
+                  key={f.key}
+                  className={`filter-tab${activeFamily === f.key ? ' active' : ''}`}
+                  onClick={() => { setActiveFamily(f.key); setStemFilter('all'); setStyleFilter('all'); }}
                 >
-                  删除
+                  {f.label}
+                  <span className="filter-tab-count">{familyCounts[f.key]}</span>
                 </button>
-              </div>
+              ))}
             </div>
+            {/* Level 2: stem type */}
+            {showSubFilters && (
+              <div className="filter-tabs sub">
+                {visibleStemFilters.map(s => (
+                  <button
+                    key={s.key}
+                    className={`filter-tab sub${stemFilter === s.key ? ' active' : ''}`}
+                    onClick={() => { setStemFilter(s.key); setStyleFilter('all'); }}
+                  >
+                    {s.label}
+                    <span className="filter-tab-count">{stemCounts[s.key] || 0}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Level 3: option style */}
+            {showSubFilters && (
+              <div className="filter-tabs sub">
+                {visibleStyleFilters.map(s => (
+                  <button
+                    key={s.key}
+                    className={`filter-tab sub${styleFilter === s.key ? ' active' : ''}`}
+                    onClick={() => setStyleFilter(s.key)}
+                  >
+                    {s.label}
+                    <span className="filter-tab-count">{styleCounts[s.key] || 0}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        ))}
-      </div>
-
-      {filtered.length === 0 && templates.length > 0 && (
-        <div style={{ textAlign: 'center', padding: 60 }}>
-          <p style={{ color: 'var(--text-secondary)' }}>没有匹配的模板</p>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <div className="filter-tabs sub">
+              {[
+                { key: 'all', label: '全部', count: statusCounts.all },
+                { key: 'completed', label: '✓ 已完成', count: statusCounts.completed },
+                { key: 'draft', label: '编辑中', count: statusCounts.draft },
+              ].map(s => (
+                <button key={s.key}
+                  className={`filter-tab sub${statusFilter === s.key ? ' active' : ''}`}
+                  onClick={() => setStatusFilter(s.key)}
+                  style={s.key === 'completed' && statusFilter === s.key ? { borderColor: 'rgba(34,197,94,0.4)', color: '#16a34a', background: 'rgba(34,197,94,0.12)' } : undefined}
+                >
+                  {s.label}
+                  <span className="filter-tab-count">{s.count}</span>
+                </button>
+              ))}
+            </div>
+            <input
+              className="glass-input"
+              style={{ width: 160, fontSize: 13 }}
+              placeholder="搜索..."
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+            />
+          </div>
         </div>
       )}
 
+      {/* Empty state */}
       {templates.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 60 }}>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>暂无模板</p>
-          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ 新建模板</button>
-        </div>
-      )}
-
-      {showCreate && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
-          onClick={() => setShowCreate(false)}
-        >
-          <div className="glass-card" style={{ width: 400, padding: 28 }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>新建题型模板</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>模板名称</label>
-                <input className="glass-input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="如：语音题干-图文3选项" />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>题干类型</label>
-                <select className="glass-input" value={form.stemType} onChange={e => setForm(p => ({ ...p, stemType: e.target.value }))}>
-                  <option value="audio">语音题干</option>
-                  <option value="text">文字题干</option>
-                  <option value="image">图片题干</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>选项样式</label>
-                <select className="glass-input" value={form.optionStyle} onChange={e => setForm(p => ({ ...p, optionStyle: e.target.value }))}>
-                  <option value="imageText">图文</option>
-                  <option value="image">图片</option>
-                  <option value="text">文字</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4, display: 'block' }}>选项数量</label>
-                <select className="glass-input" value={form.optionCount} onChange={e => setForm(p => ({ ...p, optionCount: parseInt(e.target.value) }))}>
-                  {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-              <button className="btn btn-glass btn-sm" onClick={() => setShowCreate(false)}>取消</button>
-              <button className="btn btn-primary btn-sm" onClick={handleCreate}>创建</button>
-            </div>
+        <div className="glass-card" style={{ textAlign: 'center', padding: '60px 24px' }}>
+          <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.4 }}>{'\u{1F4CB}'}</div>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>还没有模板，加载预设或创建新模板</p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <button className="btn btn-glass" onClick={handleSeedPresets} disabled={seeding}>
+              {seeding ? '加载中...' : '加载预设模板'}
+            </button>
+            <Link to="/templates/new"><button className="btn btn-primary">+ 新建模板</button></Link>
           </div>
         </div>
       )}
+
+      {/* Filtered empty */}
+      {templates.length > 0 && filtered.length === 0 && (
+        <div className="glass-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
+          <p style={{ color: 'var(--text-muted)' }}>没有匹配的模板</p>
+        </div>
+      )}
+
+      {/* Grid */}
+      <div className="template-grid">
+        {filtered.map(t => {
+          const tags = getTags(t);
+          return (
+            <Link to={`/templates/${t.id}`} key={t.id} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="template-card" style={{ cursor: 'pointer', ...(t.status === 'completed' ? { borderColor: 'rgba(34,197,94,0.35)' } : {}) }}>
+                <div className="template-card-thumb">
+                  <ThumbCanvas elements={t.elements} />
+                </div>
+                <div className="template-card-body">
+                  <div className="template-card-name">
+                    {t.name}
+                    {t.isPreset && <span className="badge badge-glass" style={{ marginLeft: 6, fontSize: 10 }}>预设</span>}
+                    {t.status === 'completed'
+                      ? <span className="badge" style={{ marginLeft: 4, fontSize: 10, background: 'rgba(34,197,94,0.15)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.3)' }}>✓ 已完成</span>
+                      : <span className="badge" style={{ marginLeft: 4, fontSize: 10, background: 'rgba(250,204,21,0.15)', color: '#a16207', border: '1px solid rgba(250,204,21,0.3)' }}>编辑中</span>
+                    }
+                  </div>
+                  {t.description && (
+                    <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {t.description}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
+                    <span className="badge badge-primary">{familyLabel(t.questionType)}</span>
+                    {tags.map(tag => <span className="badge badge-glass" key={tag}>{tag}</span>)}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    <span style={{ flex: 1 }} />
+                    <button className="btn btn-glass btn-sm" onClick={e => e.stopPropagation()}>编辑</button>
+                    <button className="btn btn-danger btn-sm" onClick={e => { e.preventDefault(); e.stopPropagation(); handleDelete(t.id); }}>删除</button>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

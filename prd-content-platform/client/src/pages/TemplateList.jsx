@@ -168,6 +168,7 @@ export default function TemplateList() {
   const [styleFilter, setStyleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchText, setSearchText] = useState('');
+  const [cardMinW, setCardMinW] = useState(() => parseInt(localStorage.getItem('tpl_card_w')) || 280);
 
   const loadTemplates = useCallback(() => {
     fetch('/api/templates').then(r => r.json()).then(d => {
@@ -366,6 +367,11 @@ export default function TemplateList() {
               value={searchText}
               onChange={e => setSearchText(e.target.value)}
             />
+            <input type="range" min={180} max={500} step={10} value={cardMinW}
+              onChange={e => { const v = +e.target.value; setCardMinW(v); localStorage.setItem('tpl_card_w', v); }}
+              title={`卡片宽度: ${cardMinW}px`}
+              style={{ width: 80, accentColor: 'var(--accent)' }}
+            />
           </div>
         </div>
       )}
@@ -392,7 +398,7 @@ export default function TemplateList() {
       )}
 
       {/* Grid */}
-      <div className="template-grid">
+      <div className="template-grid" style={{ '--card-min-w': `${cardMinW}px` }}>
         {filtered.map(t => {
           const tags = getTags(t);
           return (

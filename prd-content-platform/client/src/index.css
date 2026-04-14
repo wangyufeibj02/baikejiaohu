@@ -367,7 +367,7 @@ select.glass-input { cursor: pointer; appearance: auto; }
 .filter-tab.sub.active { background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.3); color: var(--accent); }
 
 .template-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min-w, 280px), 1fr)); gap: 22px;
 }
 .template-card {
   background: var(--crystal);

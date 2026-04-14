@@ -18,25 +18,25 @@
           "stemImage": "无",
           "stemImageDesc": "",
           "correctAnswer": "",
-          "templateId": "",
-          "artStyle": "",
+          "templateId": "03ab63d2",
+          "artStyle": "实拍",
           "options": [
             {
               "label": "A",
               "text": "",
-              "mediaType": "实拍图+文字",
+              "mediaType": "文字",
               "imageDesc": ""
             },
             {
               "label": "B",
               "text": "",
-              "mediaType": "实拍图+文字",
+              "mediaType": "文字",
               "imageDesc": ""
             },
             {
               "label": "C",
               "text": "",
-              "mediaType": "实拍图+文字",
+              "mediaType": "文字",
               "imageDesc": ""
             }
           ],
@@ -69,6 +69,6 @@
   ],
   "status": "done",
   "createdAt": 1775210092982,
-  "updatedAt": 1776138986814,
+  "updatedAt": 1776142637427,
   "themeId": "b869e4a6"
 }

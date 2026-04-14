@@ -1222,9 +1222,8 @@ export default function TemplateEditor() {
           </div>
         </div>
 
-        {/* Panel */}
-        <div className="editor-panel">
-          {/* Add elements */}
+        {/* Sidebar */}
+        <div className="editor-sidebar">
           <div className="panel-section">
             <div className="panel-section-title" onClick={() => togglePanel('addEl')}>
               <span className={`collapse-arrow ${collapsedPanels.addEl ? '' : 'open'}`}>&#9654;</span>添加元素</div>
@@ -1235,7 +1234,122 @@ export default function TemplateEditor() {
               ))}
             </div>}
           </div>
+          <div className="panel-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className="panel-section-title" onClick={() => togglePanel('elList')}>
+              <span className={`collapse-arrow ${collapsedPanels.elList ? '' : 'open'}`}>&#9654;</span>元素列表 ({elements.length})</div>
+            {!collapsedPanels.elList && <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1, overflowY: 'auto' }}>
+              {(() => {
+                const groups = {};
+                const ungrouped = [];
+                for (const el of elements) {
+                  if (el.groupId) {
+                    if (!groups[el.groupId]) groups[el.groupId] = { name: el.groupName || el.groupId, items: [] };
+                    groups[el.groupId].items.push(el);
+                  } else {
+                    ungrouped.push(el);
+                  }
+                }
+                const rows = [];
+                const rendered = new Set();
 
+                for (const el of elements) {
+                  if (rendered.has(el.id)) continue;
+                  if (el.groupId && groups[el.groupId]) {
+                    const g = groups[el.groupId];
+                    const gId = el.groupId;
+                    if (rendered.has(gId)) continue;
+                    rendered.add(gId);
+                    const collapsed = collapsedGroups[gId];
+                    const groupIds = g.items.map(e => e.id);
+                    const allSelected = groupIds.every(i => selectedIds.includes(i));
+                    rows.push(
+                      <div key={`g-${gId}`}
+                        style={{
+                          padding: '4px 6px', borderRadius: 5, fontSize: 11.5, cursor: 'pointer',
+                          background: allSelected ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(99,102,241,0.15)',
+                          display: 'flex', alignItems: 'center', gap: 4,
+                        }}
+                        onClick={() => selectGroup(gId)}
+                        onDoubleClick={(e) => { e.stopPropagation(); setEditingGroupId(gId); }}
+                      >
+                        <span
+                          style={{ fontSize: 10, width: 14, textAlign: 'center', userSelect: 'none', flexShrink: 0 }}
+                          onClick={(e) => { e.stopPropagation(); setCollapsedGroups(p => ({ ...p, [gId]: !p[gId] })); }}
+                        >{collapsed ? '▸' : '▾'}</span>
+                        {editingGroupId === gId ? (
+                          <input
+                            className="glass-input"
+                            style={{ flex: 1, padding: '2px 6px', fontSize: 11, fontWeight: 600 }}
+                            autoFocus
+                            defaultValue={g.name}
+                            onClick={e => e.stopPropagation()}
+                            onBlur={e => { renameGroup(gId, e.target.value || g.name); setEditingGroupId(null); }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') { renameGroup(gId, e.target.value || g.name); setEditingGroupId(null); }
+                              if (e.key === 'Escape') setEditingGroupId(null);
+                            }}
+                          />
+                        ) : (
+                          <span style={{ fontWeight: 600, fontSize: 11, flex: 1 }}>{g.name}</span>
+                        )}
+                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{g.items.length}个</span>
+                      </div>
+                    );
+                    if (!collapsed) {
+                      for (const child of g.items) {
+                        rendered.add(child.id);
+                        rows.push(
+                          <div key={child.id}
+                            onClick={(e) => {
+                              if (e.shiftKey) setSelectedIds(prev => prev.includes(child.id) ? prev.filter(i => i !== child.id) : [...prev, child.id]);
+                              else setSelectedIds([child.id]);
+                            }}
+                            style={{
+                              padding: '4px 8px 4px 24px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
+                              background: selectedIds.includes(child.id) ? 'var(--ice-light)' : 'transparent',
+                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            }}>
+                            <span>
+                              <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 2, background: child.color, marginRight: 4 }} />
+                              {child.label}
+                            </span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>{child.w}×{child.h}</span>
+                          </div>
+                        );
+                      }
+                    }
+                    g.items.forEach(e => rendered.add(e.id));
+                  } else {
+                    rendered.add(el.id);
+                    rows.push(
+                      <div key={el.id}
+                        onClick={(e) => {
+                          if (e.shiftKey) setSelectedIds(prev => prev.includes(el.id) ? prev.filter(i => i !== el.id) : [...prev, el.id]);
+                          else setSelectedIds([el.id]);
+                        }}
+                        style={{
+                          padding: '4px 8px', borderRadius: 5, fontSize: 11.5, cursor: 'pointer',
+                          background: selectedIds.includes(el.id) ? 'var(--ice-light)' : 'transparent',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        }}>
+                        <span>
+                          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: el.color, marginRight: 5 }} />
+                          {el.label}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{el.x},{el.y} {el.w}×{el.h}</span>
+                      </div>
+                    );
+                  }
+                }
+                return rows;
+              })()}
+            </div>}
+          </div>
+        </div>
+
+        {/* Panel */}
+        <div className="editor-panel">
           {/* Alignment */}
           {selectedIds.length > 0 && (
             <div className="panel-section">
@@ -1541,120 +1655,6 @@ export default function TemplateEditor() {
               </>}
             </div>
           )}
-
-          {/* Element list with groups */}
-          <div className="panel-section">
-            <div className="panel-section-title" onClick={() => togglePanel('elList')}>
-              <span className={`collapse-arrow ${collapsedPanels.elList ? '' : 'open'}`}>&#9654;</span>元素列表 ({elements.length})</div>
-            {!collapsedPanels.elList && <div style={{ display: 'flex', flexDirection: 'column', gap: 1, maxHeight: 260, overflowY: 'auto' }}>
-              {(() => {
-                const groups = {};
-                const ungrouped = [];
-                for (const el of elements) {
-                  if (el.groupId) {
-                    if (!groups[el.groupId]) groups[el.groupId] = { name: el.groupName || el.groupId, items: [] };
-                    groups[el.groupId].items.push(el);
-                  } else {
-                    ungrouped.push(el);
-                  }
-                }
-                const rows = [];
-                const rendered = new Set();
-
-                for (const el of elements) {
-                  if (rendered.has(el.id)) continue;
-                  if (el.groupId && groups[el.groupId]) {
-                    const g = groups[el.groupId];
-                    const gId = el.groupId;
-                    if (rendered.has(gId)) continue;
-                    rendered.add(gId);
-                    const collapsed = collapsedGroups[gId];
-                    const groupIds = g.items.map(e => e.id);
-                    const allSelected = groupIds.every(i => selectedIds.includes(i));
-                    rows.push(
-                      <div key={`g-${gId}`}
-                        style={{
-                          padding: '4px 6px', borderRadius: 5, fontSize: 11.5, cursor: 'pointer',
-                          background: allSelected ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.06)',
-                          border: '1px solid rgba(99,102,241,0.15)',
-                          display: 'flex', alignItems: 'center', gap: 4,
-                        }}
-                        onClick={() => selectGroup(gId)}
-                        onDoubleClick={(e) => { e.stopPropagation(); setEditingGroupId(gId); }}
-                      >
-                        <span
-                          style={{ fontSize: 10, width: 14, textAlign: 'center', userSelect: 'none', flexShrink: 0 }}
-                          onClick={(e) => { e.stopPropagation(); setCollapsedGroups(p => ({ ...p, [gId]: !p[gId] })); }}
-                        >{collapsed ? '▸' : '▾'}</span>
-                        {editingGroupId === gId ? (
-                          <input
-                            className="glass-input"
-                            style={{ flex: 1, padding: '2px 6px', fontSize: 11, fontWeight: 600 }}
-                            autoFocus
-                            defaultValue={g.name}
-                            onClick={e => e.stopPropagation()}
-                            onBlur={e => { renameGroup(gId, e.target.value || g.name); setEditingGroupId(null); }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') { renameGroup(gId, e.target.value || g.name); setEditingGroupId(null); }
-                              if (e.key === 'Escape') setEditingGroupId(null);
-                            }}
-                          />
-                        ) : (
-                          <span style={{ fontWeight: 600, fontSize: 11, flex: 1 }}>{g.name}</span>
-                        )}
-                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{g.items.length}个</span>
-                      </div>
-                    );
-                    if (!collapsed) {
-                      for (const child of g.items) {
-                        rendered.add(child.id);
-                        rows.push(
-                          <div key={child.id}
-                            onClick={(e) => {
-                              if (e.shiftKey) setSelectedIds(prev => prev.includes(child.id) ? prev.filter(i => i !== child.id) : [...prev, child.id]);
-                              else setSelectedIds([child.id]);
-                            }}
-                            style={{
-                              padding: '4px 8px 4px 24px', borderRadius: 4, fontSize: 11, cursor: 'pointer',
-                              background: selectedIds.includes(child.id) ? 'var(--ice-light)' : 'transparent',
-                              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                            }}>
-                            <span>
-                              <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 2, background: child.color, marginRight: 4 }} />
-                              {child.label}
-                            </span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>{child.w}×{child.h}</span>
-                          </div>
-                        );
-                      }
-                    }
-                    g.items.forEach(e => rendered.add(e.id));
-                  } else {
-                    rendered.add(el.id);
-                    rows.push(
-                      <div key={el.id}
-                        onClick={(e) => {
-                          if (e.shiftKey) setSelectedIds(prev => prev.includes(el.id) ? prev.filter(i => i !== el.id) : [...prev, el.id]);
-                          else setSelectedIds([el.id]);
-                        }}
-                        style={{
-                          padding: '4px 8px', borderRadius: 5, fontSize: 11.5, cursor: 'pointer',
-                          background: selectedIds.includes(el.id) ? 'var(--ice-light)' : 'transparent',
-                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        }}>
-                        <span>
-                          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: el.color, marginRight: 5 }} />
-                          {el.label}
-                        </span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{el.x},{el.y} {el.w}×{el.h}</span>
-                      </div>
-                    );
-                  }
-                }
-                return rows;
-              })()}
-            </div>}
-          </div>
 
           {/* Production text style */}
           <div className="panel-section">

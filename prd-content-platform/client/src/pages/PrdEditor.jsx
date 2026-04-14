@@ -13,7 +13,7 @@ const TYPE_TO_QT = {
   '拖拽题': 'drag', '连线题': 'connect', '点选题': 'hotspot',
 };
 const STEM_TYPE_LABELS = { text: '文字题干', image: '图片题干', audio: '语音题干' };
-const OPT_STYLE_LABELS = { text: '文字选项', image: '图片选项' };
+const OPT_STYLE_LABELS = { text: '文字选项', image: '图片选项', imageText: '图文选项' };
 
 function uid() { return Math.random().toString(36).slice(2, 8); }
 
@@ -255,15 +255,25 @@ function TemplatePicker({ questionType, templates, currentId, onSelect, onClose 
 }
 
 /* ─── Auto-fill logic ─── */
-function applyTemplateToQuestion(qq, tpl) {
+function isIllustrationStyle(bgStyle) {
+  return bgStyle && (bgStyle.includes('插画') || bgStyle.includes('2D') || bgStyle.includes('2d'));
+}
+
+function applyTemplateToQuestion(qq, tpl, bgStyle) {
   if (!tpl) { qq.templateId = ''; return; }
   qq.templateId = tpl.id;
 
-  if (tpl.stemType === 'image') qq.stemImage = '实拍图';
+  const imgPrefix = isIllustrationStyle(bgStyle) ? '2d插画' : '实拍图';
+
+  if (tpl.stemType === 'image') qq.stemImage = imgPrefix;
   else if (tpl.stemType === 'audio') qq.stemImage = '无';
   else qq.stemImage = '无';
 
-  const mediaType = tpl.optionStyle === 'image' ? '实拍图+文字' : '文字';
+  const mediaMap = {
+    imageText: imgPrefix + '+文字',
+    image: imgPrefix,
+  };
+  const mediaType = mediaMap[tpl.optionStyle] || '文字';
   const optCount = tpl.optionCount || 3;
   const labels = 'ABCDEFGH';
 
@@ -273,7 +283,9 @@ function applyTemplateToQuestion(qq, tpl) {
   while (qq.options.length > optCount) qq.options.pop();
   qq.options.forEach(o => { o.mediaType = mediaType; });
 
-  if (tpl.optionStyle === 'image') qq.artStyle = '实拍';
+  if (tpl.optionStyle === 'image' || tpl.optionStyle === 'imageText') {
+    qq.artStyle = isIllustrationStyle(bgStyle) ? '2d插画' : '实拍';
+  }
 }
 
 /* ─── Inline-Editable Question Card ─── */
@@ -287,9 +299,11 @@ function QuestionCard({ q, ei, qi, templates, update, onRemove, prdId }) {
   const tpl = q.templateId ? templates.find(t => t.id === q.templateId) : null;
 
   function handleTemplateSelect(tplId) {
-    uq(qq => {
+    update(p => {
+      const qq = p.epics?.[ei]?.questions?.[qi];
+      if (!qq) return;
       const selected = templates.find(t => t.id === tplId);
-      applyTemplateToQuestion(qq, selected);
+      applyTemplateToQuestion(qq, selected, p.backgroundStyle);
     });
   }
 
@@ -473,6 +487,8 @@ function QuestionCard({ q, ei, qi, templates, update, onRemove, prdId }) {
                       <AssetUpload prdId={prdId} label="参考帧" currentUrl={eff.referenceUrl}
                         onUploaded={url => uq(qq => { if (!qq.effects[key]) qq.effects[key] = {}; qq.effects[key].referenceUrl = url; })}
                         onClear={() => uq(qq => { if (qq.effects?.[key]) qq.effects[key].referenceUrl = ''; })} />
+                      <InText value={eff.duration || 4} onChange={v => uq(qq => { if (!qq.effects[key]) qq.effects[key] = {}; qq.effects[key].duration = Math.max(2, Math.min(10, Number(v) || 4)); })} style={{ fontSize: 11, width: 32, textAlign: 'center' }} />
+                      <span style={{ color: '#94a3b8', fontSize: 11, flexShrink: 0 }}>秒</span>
                     </div>
                   );
                 })}

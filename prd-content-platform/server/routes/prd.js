@@ -70,6 +70,17 @@ function matchOptionTextElement(tpl, optLabel) {
   return extractElData(textEls[idx] || textEls[0]);
 }
 
+function buildOptionImagePrompt(optText, mediaType, backgroundStyle) {
+  const subject = optText || '选项内容';
+  const isIllustration = backgroundStyle &&
+    (backgroundStyle.includes('插画') || backgroundStyle.includes('2D') || backgroundStyle.includes('2d'));
+  const styleHint = isIllustration ? '2D插画风格，卡通可爱' : '自然实拍风格，高清写实';
+  const noText = (mediaType && !mediaType.startsWith('文字'))
+    ? '，画面中不要包含任何文字、字母或数字'
+    : '';
+  return `${styleHint}，${subject}${noText}`;
+}
+
 function findStemElement(tpl) {
   if (!tpl) return null;
   const el = tpl.elements?.find(e =>
@@ -191,7 +202,7 @@ router.post('/:id/produce', (req, res) => {
         const stemEl = findStemElement(tpl);
         assets.images.push({
           name: `${q.id}_stem`,
-          description: q.stemImageDesc || `${q.stemImage}风格的题干配图`,
+          description: q.stemImageDesc || buildOptionImagePrompt(q.stem || '题干配图', q.stemImage, prd.backgroundStyle),
           mediaType: 'image',
           source: q.stemSource || 'ai',
           uploadUrl: q.stemUploadUrl || null,
@@ -217,7 +228,7 @@ router.post('/:id/produce', (req, res) => {
           const baseName = `${q.id}_option_${opt.label}`;
           assets.images.push({
             name: baseName,
-            description: opt.imageDesc || `${mt} — ${opt.text || opt.label}`,
+            description: opt.imageDesc || buildOptionImagePrompt(opt.text, mt, prd.backgroundStyle),
             mediaType: mt,
             source: isTextOnly ? 'text_render' : (opt.source || 'ai'),
             uploadUrl: opt.uploadUrl || null,
@@ -269,6 +280,7 @@ router.post('/:id/produce', (req, res) => {
       const buildAnim = (key, eff) => {
         if (!eff?.description) return;
         const info = findElementInfo(tpl, eff.target);
+        const as = tpl?.animationSettings || {};
         const animData = {
           name: `${q.id}_${key}_anim`,
           description: eff.description,
@@ -279,6 +291,9 @@ router.post('/:id/produce', (req, res) => {
           height: info?.h || null,
           borderRadius: info?.borderRadius || 0,
           padding: null,
+          fps: as.fps || 10,
+          maxColors: as.maxColors ?? 256,
+          dither: as.dither || 'none',
         };
         if (info?.presetKey === 'animation_area' && tpl?.elements) {
           const cover = tpl.elements.find(e => e.presetKey === 'anim_cover');

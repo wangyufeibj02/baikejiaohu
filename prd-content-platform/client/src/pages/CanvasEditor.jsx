@@ -28,8 +28,8 @@ function NumInput({ value, onChange, min, max, step, className, style, placehold
   );
 }
 
-const CANVAS_W = 1624;
-const CANVAS_H = 1050;
+const DEFAULT_CANVAS_W = 1624;
+const DEFAULT_CANVAS_H = 1050;
 const DEFAULT_SAFE_TOP = 150;
 const DEFAULT_SAFE_BOTTOM = 900;
 const SNAP = 10;
@@ -110,6 +110,8 @@ export default function CanvasEditor() {
   const fileRef = useRef(null);
 
   const [name, setName] = useState('新画布');
+  const [canvasW, setCanvasW] = useState(DEFAULT_CANVAS_W);
+  const [canvasH, setCanvasH] = useState(DEFAULT_CANVAS_H);
   const [safeTop, setSafeTop] = useState(DEFAULT_SAFE_TOP);
   const [safeBottom, setSafeBottom] = useState(DEFAULT_SAFE_BOTTOM);
   const [isDefault, setIsDefault] = useState(false);
@@ -164,7 +166,7 @@ export default function CanvasEditor() {
 
   const fitScaleVal = useCallback(() => {
     if (!wrapRef.current) return 0.65;
-    return Math.min(0.75, (wrapRef.current.clientWidth - 40) / CANVAS_W);
+    return Math.min(0.75, (wrapRef.current.clientWidth - 40) / canvasW);
   }, []);
 
   function resetView() { setScale(fitScaleVal()); setPan({ x: 0, y: 0 }); }
@@ -217,6 +219,8 @@ export default function CanvasEditor() {
       if (!d.success) return;
       const p = d.data;
       setName(p.name || '');
+      setCanvasW(p.canvasWidth ?? DEFAULT_CANVAS_W);
+      setCanvasH(p.canvasHeight ?? DEFAULT_CANVAS_H);
       setSafeTop(p.safeTop ?? DEFAULT_SAFE_TOP);
       setSafeBottom(p.safeBottom ?? DEFAULT_SAFE_BOTTOM);
       setIsDefault(!!p.isDefault);
@@ -226,7 +230,7 @@ export default function CanvasEditor() {
         els = [];
         if (p.showBackBtn !== false) els.push({ id: uid(), type: 'backBtn', label: '返回按钮', x: p.backBtnX ?? 58, y: p.backBtnY ?? 80, w: 40, h: 30, color: '#64748b', opacity: 1, borderRadius: 0, presetKey: 'back_btn' });
         if (p.showProgressBar !== false) els.push({ id: uid(), type: 'progressBar', label: '进度条', x: p.progressBarX ?? 440, y: p.progressBarY ?? 78, w: p.progressBarW ?? 240, h: 10, color: '#22c55e', opacity: 1, borderRadius: 5, presetKey: 'progress_bar' });
-        if (p.showBottomPill !== false) els.push({ id: uid(), type: 'bottomPill', label: '底部横条', x: CANVAS_W / 2 - 80, y: p.bottomPillY ?? 960, w: 160, h: 6, color: '#1e293b', opacity: 1, borderRadius: 3, presetKey: 'bottom_pill' });
+        if (p.showBottomPill !== false) els.push({ id: uid(), type: 'bottomPill', label: '底部横条', x: canvasW / 2 - 80, y: p.bottomPillY ?? 960, w: 160, h: 6, color: '#1e293b', opacity: 1, borderRadius: 3, presetKey: 'bottom_pill' });
       }
       setElements(els);
       pushHistory(els);
@@ -238,7 +242,7 @@ export default function CanvasEditor() {
     const progEl = elements.find(e => e.type === 'progressBar');
     const pillEl = elements.find(e => e.type === 'bottomPill');
     const payload = {
-      name, safeTop, safeBottom, canvasWidth: CANVAS_W, canvasHeight: CANVAS_H,
+      name, safeTop, safeBottom, canvasWidth: canvasW, canvasHeight: canvasH,
       showBackBtn: !!backEl, showProgressBar: !!progEl, showBottomPill: !!pillEl,
       backBtnX: backEl?.x ?? 58, backBtnY: backEl?.y ?? 80,
       progressBarX: progEl?.x ?? 440, progressBarY: progEl?.y ?? 78, progressBarW: progEl?.w ?? 240,
@@ -261,7 +265,7 @@ export default function CanvasEditor() {
     const el = {
       id: uid(), type: p.type, presetKey,
       label: p.label, color: p.color,
-      x: p.defaultX ?? Math.round(CANVAS_W / 2 - p.w / 2),
+      x: p.defaultX ?? Math.round(canvasW / 2 - p.w / 2),
       y: p.defaultY ?? Math.round((safeTop + safeBottom) / 2 - p.h / 2),
       w: p.w, h: p.h, opacity: 1, borderRadius: p.type === 'circle' ? 999 : 0,
     };
@@ -285,7 +289,7 @@ export default function CanvasEditor() {
       const el = {
         id: uid(), type: 'image', presetKey: 'image',
         label: file.name.split('.')[0], color: '#94a3b8',
-        x: Math.round(CANVAS_W / 2 - 150), y: Math.round((safeTop + safeBottom) / 2 - 100),
+        x: Math.round(canvasW / 2 - 150), y: Math.round((safeTop + safeBottom) / 2 - 100),
         w: 300, h: 200, opacity: 1, borderRadius: 8, src: ev.target.result,
       };
       const next = [...elements, el];
@@ -363,7 +367,7 @@ export default function CanvasEditor() {
   function centerCanvasH() {
     if (!selEls.length) return;
     const minX = Math.min(...selEls.map(e => e.x)), maxR = Math.max(...selEls.map(e => e.x + e.w));
-    const off = Math.round((CANVAS_W - (maxR - minX)) / 2) - minX;
+    const off = Math.round((canvasW - (maxR - minX)) / 2) - minX;
     commitElements(elements.map(el => selectedIds.includes(el.id) ? { ...el, x: el.x + off } : el));
   }
   function centerCanvasV() {
@@ -463,7 +467,7 @@ export default function CanvasEditor() {
 
     if (draggingLine) {
       if (draggingLine === 'top') setSafeTop(clamp(snapV(pt.y, snapOn), 0, safeBottom - 50));
-      else setSafeBottom(clamp(snapV(pt.y, snapOn), safeTop + 50, CANVAS_H));
+      else setSafeBottom(clamp(snapV(pt.y, snapOn), safeTop + 50, canvasH));
       return;
     }
 
@@ -531,22 +535,22 @@ export default function CanvasEditor() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.clearRect(0, 0, canvasW, canvasH);
 
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvasW, canvasH);
 
     // grid
     ctx.strokeStyle = 'rgba(56,189,248,0.06)'; ctx.lineWidth = 0.5;
-    for (let x = 0; x <= CANVAS_W; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_H); ctx.stroke(); }
-    for (let y = 0; y <= CANVAS_H; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_W, y); ctx.stroke(); }
+    for (let x = 0; x <= canvasW; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvasH); ctx.stroke(); }
+    for (let y = 0; y <= canvasH; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvasW, y); ctx.stroke(); }
 
     // danger zones
     ctx.fillStyle = 'rgba(0,0,0,0.025)';
-    ctx.fillRect(0, 0, CANVAS_W, safeTop);
-    ctx.fillRect(0, safeBottom, CANVAS_W, CANVAS_H - safeBottom);
+    ctx.fillRect(0, 0, canvasW, safeTop);
+    ctx.fillRect(0, safeBottom, canvasW, canvasH - safeBottom);
 
     ctx.fillStyle = 'rgba(56,189,248,0.04)';
-    ctx.fillRect(0, safeTop, CANVAS_W, safeBottom - safeTop);
+    ctx.fillRect(0, safeTop, canvasW, safeBottom - safeTop);
 
     // elements
     elements.forEach(el => {
@@ -641,15 +645,15 @@ export default function CanvasEditor() {
     // safe lines
     ctx.strokeStyle = 'rgba(239,68,68,0.65)'; ctx.lineWidth = 2; ctx.setLineDash([10, 5]);
     ctx.beginPath();
-    ctx.moveTo(0, safeTop); ctx.lineTo(CANVAS_W, safeTop);
-    ctx.moveTo(0, safeBottom); ctx.lineTo(CANVAS_W, safeBottom);
+    ctx.moveTo(0, safeTop); ctx.lineTo(canvasW, safeTop);
+    ctx.moveTo(0, safeBottom); ctx.lineTo(canvasW, safeBottom);
     ctx.stroke(); ctx.setLineDash([]);
 
     [safeTop, safeBottom].forEach(ly => {
       ctx.fillStyle = 'rgba(239,68,68,0.8)';
-      roundRect(ctx, CANVAS_W / 2 - 30, ly - 4, 60, 8, 4); ctx.fill();
+      roundRect(ctx, canvasW / 2 - 30, ly - 4, 60, 8, 4); ctx.fill();
       ctx.fillStyle = '#fff'; ctx.font = 'bold 7px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText('⋯', CANVAS_W / 2, ly + 3); ctx.textAlign = 'left';
+      ctx.fillText('⋯', canvasW / 2, ly + 3); ctx.textAlign = 'left';
     });
 
     ctx.font = 'bold 13px system-ui'; ctx.fillStyle = 'rgba(239,68,68,0.75)';
@@ -657,7 +661,7 @@ export default function CanvasEditor() {
     ctx.fillText(`下界 y = ${safeBottom}`, 12, safeBottom + 18);
 
     ctx.fillStyle = 'rgba(56,189,248,0.3)'; ctx.font = '14px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText(`操作区 ${safeBottom - safeTop}px`, CANVAS_W / 2, (safeTop + safeBottom) / 2 + 5);
+    ctx.fillText(`操作区 ${safeBottom - safeTop}px`, canvasW / 2, (safeTop + safeBottom) / 2 + 5);
     ctx.textAlign = 'left';
 
     // draw preview
@@ -748,7 +752,44 @@ export default function CanvasEditor() {
       </div>
 
       <div className="editor-layout">
-        {/* Canvas */}
+        {/* Left Sidebar — add elements & element list */}
+        <div className="editor-sidebar">
+          <div className="panel-section">
+            <div className="panel-section-title">添加元素</div>
+            <div className="elem-toolbar">
+              {Object.entries(ELEMENT_PRESETS).map(([key, p]) => (
+                <button key={key} className="btn btn-glass btn-sm" onClick={() => addElement(key)}
+                  style={{ borderLeftColor: p.color, borderLeftWidth: 3 }}>{p.label}</button>
+              ))}
+              <button className="btn btn-glass btn-sm" onClick={() => fileRef.current?.click()}
+                style={{ borderLeftColor: '#94a3b8', borderLeftWidth: 3 }}>上传图片</button>
+            </div>
+          </div>
+
+          <div className="panel-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className="panel-section-title">元素列表 ({elements.length})</div>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {elements.map(el => (
+                <div key={el.id}
+                  onClick={() => setSelectedIds([el.id])}
+                  style={{
+                    padding: '4px 8px', borderRadius: 5, fontSize: 11.5, cursor: 'pointer',
+                    background: selectedIds.includes(el.id) ? 'var(--ice-light)' : 'transparent',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                  <span>
+                    <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: el.type === 'circle' ? '50%' : 2, background: el.color, marginRight: 5 }} />
+                    {el.label}
+                  </span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{el.x},{el.y} {el.w}×{el.h}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Center — Canvas */}
         <div className="editor-canvas-wrap" ref={wrapRef} style={{ overflow: 'hidden', position: 'relative' }}
           onPointerDown={onWrapPointerDown} onPointerMove={onWrapPointerMove}
           onPointerUp={onWrapPointerUp} onPointerLeave={onWrapPointerUp}>
@@ -756,10 +797,10 @@ export default function CanvasEditor() {
             transform: `translate(${pan.x}px, ${pan.y}px)`,
             transformOrigin: '0 0',
             position: 'absolute', left: 0, top: 0,
-            width: CANVAS_W * scale, height: CANVAS_H * scale,
+            width: canvasW * scale, height: canvasH * scale,
           }}>
-            <canvas ref={canvasRef} width={CANVAS_W} height={CANVAS_H}
-              style={{ width: CANVAS_W * scale, height: CANVAS_H * scale, borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.1)', cursor }}
+            <canvas ref={canvasRef} width={canvasW} height={canvasH}
+              style={{ width: canvasW * scale, height: canvasH * scale, borderRadius: 8, boxShadow: '0 4px 24px rgba(0,0,0,0.1)', cursor }}
               onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}
             />
           </div>
@@ -781,22 +822,8 @@ export default function CanvasEditor() {
           </div>
         </div>
 
-        {/* Panel */}
+        {/* Right Panel — properties & alignment */}
         <div className="editor-panel">
-          {/* Add elements */}
-          <div className="panel-section">
-            <div className="panel-section-title">添加元素</div>
-            <div className="elem-toolbar">
-              {Object.entries(ELEMENT_PRESETS).map(([key, p]) => (
-                <button key={key} className="btn btn-glass btn-sm" onClick={() => addElement(key)}
-                  style={{ borderLeftColor: p.color, borderLeftWidth: 3 }}>{p.label}</button>
-              ))}
-              <button className="btn btn-glass btn-sm" onClick={() => fileRef.current?.click()}
-                style={{ borderLeftColor: '#94a3b8', borderLeftWidth: 3 }}>上传图片</button>
-            </div>
-          </div>
-
-          {/* Alignment */}
           {selectedIds.length > 0 && (
             <div className="panel-section">
               <div className="panel-section-title">对齐 &amp; 排列</div>
@@ -824,7 +851,6 @@ export default function CanvasEditor() {
             </div>
           )}
 
-          {/* Properties */}
           {selected && (
             <div className="panel-section">
               <div className="panel-section-title">{selected.label} 属性</div>
@@ -848,7 +874,6 @@ export default function CanvasEditor() {
                 </div>
               </div>
 
-              {/* Text properties */}
               {selected.type === 'text' && (
                 <div style={{ marginTop: 8, borderTop: '1px solid rgba(56,189,248,0.08)', paddingTop: 8 }}>
                   <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6 }}>文字属性</div>
@@ -891,7 +916,6 @@ export default function CanvasEditor() {
             </div>
           )}
 
-          {/* Multi-select batch */}
           {multi && (
             <div className="panel-section">
               <div className="panel-section-title">批量操作 ({selEls.length})</div>
@@ -902,45 +926,33 @@ export default function CanvasEditor() {
             </div>
           )}
 
-          {/* Element list */}
-          <div className="panel-section">
-            <div className="panel-section-title">元素列表 ({elements.length})</div>
-            <div style={{ maxHeight: 200, overflow: 'auto' }}>
-              {elements.map(el => (
-                <div key={el.id}
-                  onClick={() => setSelectedIds([el.id])}
-                  style={{
-                    padding: '4px 8px', borderRadius: 5, fontSize: 11.5, cursor: 'pointer',
-                    background: selectedIds.includes(el.id) ? 'var(--ice-light)' : 'transparent',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}>
-                  <span>
-                    <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: el.type === 'circle' ? '50%' : 2, background: el.color, marginRight: 5 }} />
-                    {el.label}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{el.x},{el.y} {el.w}×{el.h}</span>
-                </div>
-              ))}
+          {!selected && !multi && (
+            <div className="panel-section">
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>
+                选择画布上的元素<br />查看和编辑属性
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Safe lines */}
           <div className="panel-section">
             <div className="panel-section-title">安全线</div>
             <div className="prop-grid">
               <div className="prop-cell"><label>上界 Y</label><NumInput className="glass-input" min={0} max={safeBottom - 50} value={safeTop} onChange={v => setSafeTop(v)} /></div>
-              <div className="prop-cell"><label>下界 Y</label><NumInput className="glass-input" min={safeTop + 50} max={CANVAS_H} value={safeBottom} onChange={v => setSafeBottom(v)} /></div>
+              <div className="prop-cell"><label>下界 Y</label><NumInput className="glass-input" min={safeTop + 50} max={canvasH} value={safeBottom} onChange={v => setSafeBottom(v)} /></div>
             </div>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
               操作区 {safeBottom - safeTop}px · 可拖拽红线调整
             </div>
           </div>
 
-          {/* Info */}
           <div className="panel-section">
-            <div className="panel-section-title">画布信息</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-              {CANVAS_W}×{CANVAS_H} | 缩放 {(scale * 100).toFixed(0)}%
+            <div className="panel-section-title">画布尺寸</div>
+            <div className="prop-grid">
+              <div className="prop-cell"><label>宽</label><NumInput className="glass-input" min={100} max={4096} value={canvasW} onChange={v => setCanvasW(v)} /></div>
+              <div className="prop-cell"><label>高</label><NumInput className="glass-input" min={100} max={4096} value={canvasH} onChange={v => setCanvasH(v)} /></div>
+            </div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+              缩放 {(scale * 100).toFixed(0)}%
             </div>
           </div>
         </div>

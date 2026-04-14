@@ -247,6 +247,7 @@ export default function TemplateEditor() {
     correct:  { borderWidth: 4, borderColor: '#22c55e', borderOpacity: 1, borderStyle: 'dashed', lineCap: 'round', dashLength: 12, dashGap: 6, borderGap: 8, borderRadius: 16, fillColor: '#22c55e', fillOpacity: 0.15 },
   };
   const [optionStates, setOptionStates] = useState(DEFAULT_OPTION_STATES);
+  const [animSettings, setAnimSettings] = useState({ fps: 10, maxColors: 256, dither: 'floyd_steinberg' });
 
   const [elements, setElements] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -360,6 +361,7 @@ export default function TemplateEditor() {
           setStatus(d.data.status || 'draft');
           if (d.data.textStyle) setTextStyle(ts => ({ ...ts, ...d.data.textStyle }));
           if (d.data.optionStates) setOptionStates(os => ({ selected: { ...os.selected, ...d.data.optionStates.selected }, correct: { ...os.correct, ...d.data.optionStates.correct } }));
+          if (d.data.animationSettings) setAnimSettings(as => ({ ...as, ...d.data.animationSettings }));
           loadCanvasPresets();
           if (d.data.canvasPresetId) {
             setCanvasPresetId(d.data.canvasPresetId);
@@ -1093,7 +1095,7 @@ export default function TemplateEditor() {
   }
 
   async function handleSave() {
-    const payload = { name, questionType, stemType, optionStyle, description, optionCount, variant, status, elements, canvasWidth: CANVAS_W, canvasHeight: CANVAS_H, safeTop, safeBottom, canvasPresetId, textStyle, optionStates };
+    const payload = { name, questionType, stemType, optionStyle, description, optionCount, variant, status, elements, canvasWidth: CANVAS_W, canvasHeight: CANVAS_H, safeTop, safeBottom, canvasPresetId, textStyle, optionStates, animationSettings: animSettings };
     const url = id && id !== 'new' ? `/api/templates/${id}` : '/api/templates';
     const method = id && id !== 'new' ? 'PUT' : 'POST';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -1183,45 +1185,6 @@ export default function TemplateEditor() {
       </div>
 
       <div className="editor-layout">
-        {/* Canvas */}
-        <div className="editor-canvas-wrap" ref={wrapRef} style={{ overflow: 'hidden', position: 'relative' }}
-          onPointerDown={onWrapPointerDown} onPointerMove={onWrapPointerMove}
-          onPointerUp={onWrapPointerUp} onPointerLeave={onWrapPointerUp}>
-          <div style={{
-            transform: `translate(${pan.x}px, ${pan.y}px)`,
-            transformOrigin: '0 0',
-            position: 'absolute', left: 0, top: 0,
-            width: CANVAS_W * scale, height: CANVAS_H * scale,
-          }}>
-            <canvas
-              ref={canvasRef} width={CANVAS_W} height={CANVAS_H}
-              style={{
-                width: CANVAS_W * scale, height: CANVAS_H * scale, borderRadius: 8,
-                boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
-                cursor: panning ? 'grabbing' : spaceHeld ? 'grab' : locked ? 'not-allowed' : draggingLine ? 'row-resize' : dragging ? 'grabbing' : resizing ? 'nwse-resize' : marquee ? 'crosshair' : 'default',
-              }}
-              onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp} onPointerLeave={onPointerUp}
-            />
-          </div>
-          {/* Zoom indicator */}
-          <div style={{
-            position: 'absolute', bottom: 8, left: 8, display: 'flex', alignItems: 'center', gap: 4,
-            background: 'rgba(15,23,42,0.75)', borderRadius: 6, padding: '3px 8px', backdropFilter: 'blur(8px)',
-            fontSize: 11, color: '#94a3b8', userSelect: 'none', zIndex: 10,
-          }}>
-            <button onClick={() => setScale(s => Math.max(MIN_SCALE, s / 1.2))}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}>−</button>
-            <span onClick={resetView}
-              style={{ cursor: 'pointer', minWidth: 36, textAlign: 'center', fontWeight: 600 }}
-              title="点击重置视图 (Ctrl+0)">
-              {Math.round(scale * 100)}%
-            </span>
-            <button onClick={() => setScale(s => Math.min(MAX_SCALE, s * 1.2))}
-              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}>+</button>
-          </div>
-        </div>
-
         {/* Sidebar */}
         <div className="editor-sidebar">
           <div className="panel-section">
@@ -1345,6 +1308,45 @@ export default function TemplateEditor() {
                 return rows;
               })()}
             </div>}
+          </div>
+        </div>
+
+        {/* Canvas */}
+        <div className="editor-canvas-wrap" ref={wrapRef} style={{ overflow: 'hidden', position: 'relative' }}
+          onPointerDown={onWrapPointerDown} onPointerMove={onWrapPointerMove}
+          onPointerUp={onWrapPointerUp} onPointerLeave={onWrapPointerUp}>
+          <div style={{
+            transform: `translate(${pan.x}px, ${pan.y}px)`,
+            transformOrigin: '0 0',
+            position: 'absolute', left: 0, top: 0,
+            width: CANVAS_W * scale, height: CANVAS_H * scale,
+          }}>
+            <canvas
+              ref={canvasRef} width={CANVAS_W} height={CANVAS_H}
+              style={{
+                width: CANVAS_W * scale, height: CANVAS_H * scale, borderRadius: 8,
+                boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
+                cursor: panning ? 'grabbing' : spaceHeld ? 'grab' : locked ? 'not-allowed' : draggingLine ? 'row-resize' : dragging ? 'grabbing' : resizing ? 'nwse-resize' : marquee ? 'crosshair' : 'default',
+              }}
+              onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp} onPointerLeave={onPointerUp}
+            />
+          </div>
+          {/* Zoom indicator */}
+          <div style={{
+            position: 'absolute', bottom: 8, left: 8, display: 'flex', alignItems: 'center', gap: 4,
+            background: 'rgba(15,23,42,0.75)', borderRadius: 6, padding: '3px 8px', backdropFilter: 'blur(8px)',
+            fontSize: 11, color: '#94a3b8', userSelect: 'none', zIndex: 10,
+          }}>
+            <button onClick={() => setScale(s => Math.max(MIN_SCALE, s / 1.2))}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}>−</button>
+            <span onClick={resetView}
+              style={{ cursor: 'pointer', minWidth: 36, textAlign: 'center', fontWeight: 600 }}
+              title="点击重置视图 (Ctrl+0)">
+              {Math.round(scale * 100)}%
+            </span>
+            <button onClick={() => setScale(s => Math.min(MAX_SCALE, s * 1.2))}
+              style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1 }}>+</button>
           </div>
         </div>
 
@@ -1719,6 +1721,48 @@ export default function TemplateEditor() {
                 onChange={(sk, k, v) => setOptionStates(prev => ({ ...prev, [sk]: { ...prev[sk], [k]: v } }))} /></>}
             </div>
           )}
+
+          {/* Animation output settings */}
+          <div className="panel-section">
+            <div className="panel-section-title" onClick={() => togglePanel('animOut')}>
+              <span className={`collapse-arrow ${collapsedPanels.animOut ? '' : 'open'}`}>&#9654;</span>动效输出设置</div>
+            {!collapsedPanels.animOut && <>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>APNG 输出质量与体积控制</div>
+              <div className="prop-grid">
+                <div className="prop-cell">
+                  <label>帧率</label>
+                  <input type="number" className="glass-input" min="5" max="30" value={animSettings.fps}
+                    onChange={e => setAnimSettings(s => ({ ...s, fps: Math.max(5, Math.min(30, Number(e.target.value) || 10)) }))} />
+                </div>
+                <div className="prop-cell">
+                  <label>颜色数</label>
+                  <select className="glass-input" value={animSettings.maxColors || 256}
+                    onChange={e => setAnimSettings(s => ({ ...s, maxColors: Number(e.target.value) }))}>
+                    <option value="64">64 色</option>
+                    <option value="128">128 色</option>
+                    <option value="256">256 色</option>
+                    <option value="0">不压缩</option>
+                  </select>
+                </div>
+                {animSettings.maxColors !== 0 && (
+                  <div className="prop-cell">
+                    <label>抖动</label>
+                    <select className="glass-input" value={animSettings.dither || 'floyd_steinberg'}
+                      onChange={e => setAnimSettings(s => ({ ...s, dither: e.target.value }))}>
+                      <option value="none">无</option>
+                      <option value="floyd_steinberg">Floyd-Steinberg</option>
+                      <option value="bayer">Bayer</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4 }}>
+                {animSettings.maxColors === 0
+                  ? '原始画质，体积较大'
+                  : `${animSettings.fps}fps · ${animSettings.maxColors}色 · ${animSettings.dither === 'none' ? '无抖动' : animSettings.dither}`}
+              </div>
+            </>}
+          </div>
 
           {/* Canvas preset */}
           <div className="panel-section">

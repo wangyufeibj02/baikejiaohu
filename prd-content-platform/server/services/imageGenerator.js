@@ -195,122 +195,154 @@ async function renderStateImage(normalImagePath, stateConfig) {
   return cvs.toBuffer('image/png');
 }
 
-export async function generateImages(analysisResult, taskDir) {
+const IMG_CONCURRENCY = 3;
+
+async function runWithConcurrency(taskFns, concurrency) {
   const results = [];
+  const executing = new Set();
+  for (const fn of taskFns) {
+    const p = fn().then(r => { executing.delete(p); return r; });
+    executing.add(p);
+    results.push(p);
+    if (executing.size >= concurrency) await Promise.race(executing);
+  }
+  return Promise.all(results);
+}
+
+async function processOneImage(question, img, qDir, taskDir) {
+  const [w, h] = (img.size || '360x360').split('x').map(Number);
+  const outPath = join(qDir, `${img.name}.png`);
+  const hasText = img.text && img.textAreaSize;
+  const radius = img.borderRadius || 0;
+
+  try {
+    let finalBuf;
+    let model = '';
+
+    if (img.source === 'text_render') {
+      const tw = hasText ? parseInt(img.textAreaSize.split('x')[0]) : w;
+      const th = hasText ? parseInt(img.textAreaSize.split('x')[1]) : h;
+      console.log(`[图片] 纯文字渲染 ${question.id}/${img.name} "${img.text}" (${tw}x${th})`);
+      finalBuf = renderTextBlock(img.text, tw, th, img.textStyle);
+      if (radius > 0) finalBuf = await applyRoundedCorners(finalBuf, tw, th, radius);
+      model = 'text_render';
+      writeFileSync(outPath, finalBuf);
+      console.log(`[图片]   ✓ ${img.name} (text_render)`);
+      return { questionId: question.id, name: img.name, path: outPath, size: `${tw}x${th}`, model, status: 'done' };
+    }
+
+    if (img.source === 'upload' && img.uploadUrl) {
+      console.log(`[图片] 直接提供 ${question.id}/${img.name} → 裁切至 ${w}x${h}`);
+      let buf;
+      if (img.uploadUrl.startsWith('/uploads/')) {
+        const localPath = join(taskDir, '..', '..', img.uploadUrl);
+        buf = readFileSync(localPath);
+      } else if (img.uploadUrl.startsWith('/')) {
+        buf = readFileSync(img.uploadUrl);
+      } else {
+        buf = await downloadFile(img.uploadUrl);
+      }
+      finalBuf = await sharp(buf).resize(w, h, { fit: 'cover' }).png().toBuffer();
+
+      if (hasText) {
+        const [tw, th2] = img.textAreaSize.split('x').map(Number);
+        finalBuf = await compositeWithText(finalBuf, w, h, img.text, tw, th2, img.textStyle);
+        const totalH = h + th2;
+        if (radius > 0) finalBuf = await applyRoundedCorners(finalBuf, w, totalH, radius);
+        console.log(`[图片]   + 合成文字 "${img.text}"`);
+      } else if (radius > 0) {
+        finalBuf = await applyRoundedCorners(finalBuf, w, h, radius);
+      }
+
+      model = 'upload';
+      writeFileSync(outPath, finalBuf);
+      console.log(`[图片]   ✓ ${img.name} (upload, ${w}x${h}, r=${radius})`);
+      return { questionId: question.id, name: img.name, path: outPath, size: `${w}x${h}`, model, status: 'done' };
+    }
+
+    let prompt = img.prompt || img.description;
+    if (!prompt) return null;
+
+    if (hasText && !prompt.includes('不') && !prompt.includes('no text')) {
+      prompt += '，画面中不要出现任何文字';
+    }
+
+    console.log(`[图片] 生成 ${question.id}/${img.name} ...`);
+    let genResult;
+
+    if (img.referenceUrl) {
+      let refUrl = img.referenceUrl;
+      if (refUrl.startsWith('/')) refUrl = `http://localhost:3200${refUrl}`;
+      genResult = await tryImageToImage(prompt, [refUrl], w, h);
+    } else {
+      genResult = await tryTextToImage(prompt, w, h);
+    }
+
+    const imageBuffer = await downloadFile(genResult.url);
+    finalBuf = await sharp(imageBuffer).resize(w, h, { fit: 'cover' }).png().toBuffer();
+
+    if (hasText) {
+      const [tw, th2] = img.textAreaSize.split('x').map(Number);
+      finalBuf = await compositeWithText(finalBuf, w, h, img.text, tw, th2, img.textStyle);
+      const totalH = h + th2;
+      if (radius > 0) finalBuf = await applyRoundedCorners(finalBuf, w, totalH, radius);
+      console.log(`[图片]   + 合成文字 "${img.text}"`);
+    } else if (radius > 0) {
+      finalBuf = await applyRoundedCorners(finalBuf, w, h, radius);
+    }
+
+    model = genResult.model;
+    writeFileSync(outPath, finalBuf);
+    console.log(`[图片]   ✓ ${img.name} (via ${model}, ${w}x${h}, r=${radius})`);
+    return { questionId: question.id, name: img.name, path: outPath, size: `${w}x${h}`, model, status: 'done' };
+  } catch (err) {
+    console.error(`[图片] 全部模型失败 ${question.id}/${img.name}:`, err.message);
+    return { questionId: question.id, name: img.name, status: 'failed', error: err.message };
+  }
+}
+
+export async function generateImages(analysisResult, taskDir) {
   const questions = analysisResult.questions || analysisResult.epics?.flatMap(e => e.questions) || [];
+
+  const normalTasks = [];
+  const variantTasks = [];
 
   for (const question of questions) {
     const qDir = join(taskDir, question.id.replace(/\./g, '-'));
     mkdirSync(qDir, { recursive: true });
-
     const images = question.assets?.images || question.imagePrompts || [];
-
     for (const img of images) {
-      const [w, h] = (img.size || '360x360').split('x').map(Number);
-      const outPath = join(qDir, `${img.name}.png`);
-      const hasText = img.text && img.textAreaSize;
-      const radius = img.borderRadius || 0;
-
-      try {
-        let finalBuf;
-        let model = '';
-
-        if (img.source === '_state_variant') {
-          const basePath = join(qDir, `${img.baseImageName}.png`);
-          if (!existsSync(basePath)) {
-            console.warn(`[图片] 状态变体跳过 — 常态图不存在: ${img.baseImageName}`);
-            results.push({ questionId: question.id, name: img.name, status: 'failed', error: '常态图未生成' });
-            continue;
-          }
-          console.log(`[图片] 状态变体 ${question.id}/${img.name} (${img.stateType})`);
-          finalBuf = await renderStateImage(basePath, img.stateConfig);
-          model = 'state_variant';
-          writeFileSync(outPath, finalBuf);
-          console.log(`[图片]   ✓ ${img.name} (${img.stateType})`);
-          results.push({ questionId: question.id, name: img.name, path: outPath, model, status: 'done' });
-          continue;
-        }
-
-        if (img.source === 'text_render') {
-          const tw = hasText ? parseInt(img.textAreaSize.split('x')[0]) : w;
-          const th = hasText ? parseInt(img.textAreaSize.split('x')[1]) : h;
-          console.log(`[图片] 纯文字渲染 ${question.id}/${img.name} "${img.text}" (${tw}x${th})`);
-          finalBuf = renderTextBlock(img.text, tw, th, img.textStyle);
-          if (radius > 0) finalBuf = await applyRoundedCorners(finalBuf, tw, th, radius);
-          model = 'text_render';
-          writeFileSync(outPath, finalBuf);
-          console.log(`[图片]   ✓ ${img.name} (text_render)`);
-          results.push({ questionId: question.id, name: img.name, path: outPath, size: `${tw}x${th}`, model, status: 'done' });
-          continue;
-        }
-
-        if (img.source === 'upload' && img.uploadUrl) {
-          console.log(`[图片] 直接提供 ${question.id}/${img.name} → 裁切至 ${w}x${h}`);
-          let buf;
-          if (img.uploadUrl.startsWith('/uploads/')) {
-            const localPath = join(taskDir, '..', '..', img.uploadUrl);
-            buf = readFileSync(localPath);
-          } else if (img.uploadUrl.startsWith('/')) {
-            buf = readFileSync(img.uploadUrl);
-          } else {
-            buf = await downloadFile(img.uploadUrl);
-          }
-          finalBuf = await sharp(buf).resize(w, h, { fit: 'cover' }).png().toBuffer();
-
-          if (hasText) {
-            const [tw, th2] = img.textAreaSize.split('x').map(Number);
-            finalBuf = await compositeWithText(finalBuf, w, h, img.text, tw, th2, img.textStyle);
-            const totalH = h + th2;
-            if (radius > 0) finalBuf = await applyRoundedCorners(finalBuf, w, totalH, radius);
-            console.log(`[图片]   + 合成文字 "${img.text}"`);
-          } else if (radius > 0) {
-            finalBuf = await applyRoundedCorners(finalBuf, w, h, radius);
-          }
-
-          model = 'upload';
-          writeFileSync(outPath, finalBuf);
-          console.log(`[图片]   ✓ ${img.name} (upload, ${w}x${h}, r=${radius})`);
-          results.push({ questionId: question.id, name: img.name, path: outPath, size: `${w}x${h}`, model, status: 'done' });
-          continue;
-        }
-
-        const prompt = img.prompt || img.description;
-        if (!prompt) continue;
-
-        console.log(`[图片] 生成 ${question.id}/${img.name} ...`);
-        let genResult;
-
-        if (img.referenceUrl) {
-          let refUrl = img.referenceUrl;
-          if (refUrl.startsWith('/')) refUrl = `http://localhost:3200${refUrl}`;
-          genResult = await tryImageToImage(prompt, [refUrl], w, h);
-        } else {
-          genResult = await tryTextToImage(prompt, w, h);
-        }
-
-        const imageBuffer = await downloadFile(genResult.url);
-        finalBuf = await sharp(imageBuffer).resize(w, h, { fit: 'cover' }).png().toBuffer();
-
-        if (hasText) {
-          const [tw, th2] = img.textAreaSize.split('x').map(Number);
-          finalBuf = await compositeWithText(finalBuf, w, h, img.text, tw, th2, img.textStyle);
-          const totalH = h + th2;
-          if (radius > 0) finalBuf = await applyRoundedCorners(finalBuf, w, totalH, radius);
-          console.log(`[图片]   + 合成文字 "${img.text}"`);
-        } else if (radius > 0) {
-          finalBuf = await applyRoundedCorners(finalBuf, w, h, radius);
-        }
-
-        model = genResult.model;
-        writeFileSync(outPath, finalBuf);
-        console.log(`[图片]   ✓ ${img.name} (via ${model}, ${w}x${h}, r=${radius})`);
-        results.push({ questionId: question.id, name: img.name, path: outPath, size: `${w}x${h}`, model, status: 'done' });
-      } catch (err) {
-        console.error(`[图片] 全部模型失败 ${question.id}/${img.name}:`, err.message);
-        results.push({ questionId: question.id, name: img.name, status: 'failed', error: err.message });
+      if (img.source === '_state_variant') {
+        variantTasks.push({ question, img, qDir });
+      } else {
+        normalTasks.push(() => processOneImage(question, img, qDir, taskDir));
       }
     }
   }
 
-  return results;
+  console.log(`[图片] 共 ${normalTasks.length} 张普通图 + ${variantTasks.length} 张状态变体，并发数 ${IMG_CONCURRENCY}`);
+  const normalResults = await runWithConcurrency(normalTasks, IMG_CONCURRENCY);
+
+  const variantResults = [];
+  for (const { question, img, qDir } of variantTasks) {
+    const outPath = join(qDir, `${img.name}.png`);
+    try {
+      const basePath = join(qDir, `${img.baseImageName}.png`);
+      if (!existsSync(basePath)) {
+        console.warn(`[图片] 状态变体跳过 — 常态图不存在: ${img.baseImageName}`);
+        variantResults.push({ questionId: question.id, name: img.name, status: 'failed', error: '常态图未生成' });
+        continue;
+      }
+      console.log(`[图片] 状态变体 ${question.id}/${img.name} (${img.stateType})`);
+      const finalBuf = await renderStateImage(basePath, img.stateConfig);
+      writeFileSync(outPath, finalBuf);
+      console.log(`[图片]   ✓ ${img.name} (${img.stateType})`);
+      variantResults.push({ questionId: question.id, name: img.name, path: outPath, model: 'state_variant', status: 'done' });
+    } catch (err) {
+      console.error(`[图片] 状态变体失败 ${question.id}/${img.name}:`, err.message);
+      variantResults.push({ questionId: question.id, name: img.name, status: 'failed', error: err.message });
+    }
+  }
+
+  return [...normalResults.filter(Boolean), ...variantResults];
 }

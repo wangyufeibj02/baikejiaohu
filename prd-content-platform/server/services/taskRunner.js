@@ -142,29 +142,28 @@ async function runTask(taskId) {
   const ar = task.analysisResult;
   console.log(`[任务] ${taskId} 开始 — ${task.prdName} (${(ar.questions || []).length} 题)`);
 
-  task.progress.current = '1/5 生成图片...';
+  task.progress.current = '1/4 生成图片+配音...';
   saveTask(task);
-  const imageResults = await generateImages(ar, taskDir);
+  const [imageResults, audioResults] = await Promise.all([
+    generateImages(ar, taskDir),
+    generateAudios(ar, taskDir),
+  ]);
 
-  task.progress.done = imageResults.filter(r => r.status === 'done').length;
-  task.progress.failed = imageResults.filter(r => r.status === 'failed').length;
-  task.progress.current = '2/5 生成配音...';
-  saveTask(task);
-  const audioResults = await generateAudios(ar, taskDir);
-
-  task.progress.done += audioResults.filter(r => r.status === 'done').length;
-  task.progress.failed += audioResults.filter(r => r.status === 'failed').length;
-  task.progress.current = '3/5 生成动效...';
+  task.progress.done = imageResults.filter(r => r.status === 'done').length
+                     + audioResults.filter(r => r.status === 'done').length;
+  task.progress.failed = imageResults.filter(r => r.status === 'failed').length
+                       + audioResults.filter(r => r.status === 'failed').length;
+  task.progress.current = '2/4 生成动效...';
   saveTask(task);
   const animResults = await generateAnimations(ar, taskDir);
 
   task.progress.done += animResults.filter(r => r.status === 'done').length;
   task.progress.failed += animResults.filter(r => r.status === 'failed').length;
-  task.progress.current = '4/5 生成配置...';
+  task.progress.current = '3/4 生成配置...';
   saveTask(task);
   const configResults = await generateConfigs(ar, taskDir);
 
-  task.progress.current = '5/5 生成元数据...';
+  task.progress.current = '4/4 生成元数据...';
   saveTask(task);
   await generateMetadata(ar, taskDir, {
     images: imageResults, audios: audioResults, animations: animResults, configs: configResults,

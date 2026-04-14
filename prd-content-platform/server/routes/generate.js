@@ -51,19 +51,19 @@ router.post('/', async (req, res) => {
 
     console.log(`[生成] 任务 ${taskId} 开始`);
 
-    console.log('[生成] 1/5 图片素材 ...');
-    const imageResults = await generateImages(analysisResult, taskDir);
+    console.log('[生成] 1/4 图片+配音（并行）...');
+    const [imageResults, audioResults] = await Promise.all([
+      generateImages(analysisResult, taskDir),
+      generateAudios(analysisResult, taskDir),
+    ]);
 
-    console.log('[生成] 2/5 配音音频 ...');
-    const audioResults = await generateAudios(analysisResult, taskDir);
-
-    console.log('[生成] 3/5 动效视频 → APNG ...');
+    console.log('[生成] 2/4 动效视频 → APNG ...');
     const animResults = await generateAnimations(analysisResult, taskDir);
 
-    console.log('[生成] 4/5 配置文件 ...');
+    console.log('[生成] 3/4 配置文件 ...');
     const configResults = await generateConfigs(analysisResult, taskDir);
 
-    console.log('[生成] 5/5 元数据清单 ...');
+    console.log('[生成] 4/4 元数据清单 ...');
     const metadataResults = await generateMetadata(analysisResult, taskDir, {
       images: imageResults,
       audios: audioResults,

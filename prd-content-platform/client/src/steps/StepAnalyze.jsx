@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
-export default function StepAnalyze({ text, images, onAnalyzed, onBack }) {
-  const [result, setResult] = useState(null);
+export default function StepAnalyze({ text, images, preloaded, onAnalyzed, onBack }) {
+  const [result, setResult] = useState(preloaded || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,7 +32,7 @@ export default function StepAnalyze({ text, images, onAnalyzed, onBack }) {
 
   return (
     <div className="card">
-      <h2>Step 3 - AI 解析结果</h2>
+      <h2>{preloaded ? 'PRD 素材汇总' : 'Step 3 - AI 解析结果'}</h2>
 
       {!result && !loading && (
         <>
@@ -146,7 +146,7 @@ export default function StepAnalyze({ text, images, onAnalyzed, onBack }) {
           </details>
 
           <div className="actions">
-            <button className="btn btn-outline" onClick={onBack}>上一步</button>
+            {!preloaded && <button className="btn btn-outline" onClick={onBack}>上一步</button>}
             <button className="btn btn-primary" onClick={() => onAnalyzed(result)}>
               确认，开始生成素材
             </button>

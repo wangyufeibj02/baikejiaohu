@@ -1,5 +1,5 @@
 import { join, dirname } from 'path';
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
 import { createCanvas, registerFont } from 'canvas';
@@ -145,54 +145,53 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-async function renderStateImage(normalImagePath, stateConfig) {
-  const { borderWidth = 4, borderColor = '#22c55e', borderStyle = 'dashed',
-    dashLength = 12, dashGap = 6, borderGap = 8, borderRadius = 16,
-    fillColor = 'transparent', fillOpacity = 0 } = stateConfig;
-
-  const imgBuf = readFileSync(normalImagePath);
-  const meta = await sharp(imgBuf).metadata();
-  const imgW = meta.width;
-  const imgH = meta.height;
-
-  const expand = borderGap + borderWidth;
-  const totalW = imgW + expand * 2;
-  const totalH = imgH + expand * 2;
-
-  const cvs = createCanvas(totalW, totalH);
-  const ctx = cvs.getContext('2d');
-
-  const bx = borderWidth / 2;
-  const by = borderWidth / 2;
-  const bw = totalW - borderWidth;
-  const bh = totalH - borderWidth;
+async function renderFramedImage(contentBuffer, frameConfig, cardW, cardH) {
+  const { borderWidth = 0, borderColor = '#cccccc', borderStyle = 'solid',
+    dashLength = 12, dashGap = 6, borderRadius = 16,
+    fillColor = 'transparent', fillOpacity = 0 } = frameConfig;
 
   const { loadImage } = await import('canvas');
-  const img = await loadImage(imgBuf);
-  ctx.drawImage(img, expand, expand, imgW, imgH);
+  const img = await loadImage(contentBuffer);
 
+  const cvs = createCanvas(cardW, cardH);
+  const ctx = cvs.getContext('2d');
+
+  const offsetX = Math.round((cardW - img.width) / 2);
+  const offsetY = Math.round((cardH - img.height) / 2);
+  ctx.drawImage(img, offsetX, offsetY, img.width, img.height);
+
+  const bw = borderWidth || 0;
   if (fillOpacity > 0 && fillColor && fillColor !== 'transparent') {
     ctx.save();
     ctx.globalAlpha = fillOpacity;
     ctx.fillStyle = fillColor;
-    roundRectPath(ctx, bx, by, bw, bh, borderRadius);
+    roundRectPath(ctx, bw / 2, bw / 2, cardW - bw, cardH - bw, borderRadius);
     ctx.fill();
     ctx.restore();
   }
 
-  ctx.save();
-  ctx.globalAlpha = stateConfig.borderOpacity ?? 1;
-  ctx.strokeStyle = borderColor;
-  ctx.lineWidth = borderWidth;
-  if (borderStyle === 'dashed') {
-    ctx.setLineDash([dashLength, dashGap]);
-    ctx.lineCap = stateConfig.lineCap || 'butt';
+  if (bw > 0 && (frameConfig.borderOpacity ?? 1) > 0) {
+    ctx.save();
+    ctx.globalAlpha = frameConfig.borderOpacity ?? 1;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = bw;
+    if (borderStyle === 'dashed') {
+      ctx.setLineDash([dashLength, dashGap]);
+      ctx.lineCap = frameConfig.lineCap || 'butt';
+    }
+    roundRectPath(ctx, bw / 2, bw / 2, cardW - bw, cardH - bw, borderRadius);
+    ctx.stroke();
+    ctx.restore();
   }
-  roundRectPath(ctx, bx, by, bw, bh, borderRadius);
-  ctx.stroke();
-  ctx.restore();
 
   return cvs.toBuffer('image/png');
+}
+
+async function renderStateImage(normalImagePath, stateConfig) {
+  const imgBuf = readFileSync(normalImagePath);
+  const meta = await sharp(imgBuf).metadata();
+  const expand = (stateConfig.borderGap || 8) + (stateConfig.borderWidth || 4);
+  return renderFramedImage(imgBuf, stateConfig, meta.width + expand * 2, meta.height + expand * 2);
 }
 
 const IMG_CONCURRENCY = 3;
@@ -214,6 +213,8 @@ async function processOneImage(question, img, qDir, taskDir) {
   const outPath = join(qDir, `${img.name}.png`);
   const hasText = img.text && img.textAreaSize;
   const radius = img.borderRadius || 0;
+  const hasFrame = !!img.normalStateConfig && !!img.cardSize;
+  const contentPath = hasFrame ? join(qDir, `${img.name}_content.png`) : null;
 
   try {
     let finalBuf;
@@ -226,9 +227,14 @@ async function processOneImage(question, img, qDir, taskDir) {
       finalBuf = renderTextBlock(img.text, tw, th, img.textStyle);
       if (radius > 0) finalBuf = await applyRoundedCorners(finalBuf, tw, th, radius);
       model = 'text_render';
+      if (hasFrame) {
+        writeFileSync(contentPath, finalBuf);
+        const [cw, ch] = img.cardSize.split('x').map(Number);
+        finalBuf = await renderFramedImage(finalBuf, img.normalStateConfig, cw, ch);
+      }
       writeFileSync(outPath, finalBuf);
-      console.log(`[图片]   ✓ ${img.name} (text_render)`);
-      return { questionId: question.id, name: img.name, path: outPath, size: `${tw}x${th}`, model, status: 'done' };
+      console.log(`[图片]   ✓ ${img.name} (text_render${hasFrame ? ', framed' : ''})`);
+      return { questionId: question.id, name: img.name, path: outPath, size: hasFrame ? img.cardSize : `${tw}x${th}`, model, status: 'done' };
     }
 
     if (img.source === 'upload' && img.uploadUrl) {
@@ -255,9 +261,14 @@ async function processOneImage(question, img, qDir, taskDir) {
       }
 
       model = 'upload';
+      if (hasFrame) {
+        writeFileSync(contentPath, finalBuf);
+        const [cw, ch] = img.cardSize.split('x').map(Number);
+        finalBuf = await renderFramedImage(finalBuf, img.normalStateConfig, cw, ch);
+      }
       writeFileSync(outPath, finalBuf);
-      console.log(`[图片]   ✓ ${img.name} (upload, ${w}x${h}, r=${radius})`);
-      return { questionId: question.id, name: img.name, path: outPath, size: `${w}x${h}`, model, status: 'done' };
+      console.log(`[图片]   ✓ ${img.name} (upload, ${w}x${h}${hasFrame ? ', framed' : ''})`);
+      return { questionId: question.id, name: img.name, path: outPath, size: hasFrame ? img.cardSize : `${w}x${h}`, model, status: 'done' };
     }
 
     let prompt = img.prompt || img.description;
@@ -292,9 +303,14 @@ async function processOneImage(question, img, qDir, taskDir) {
     }
 
     model = genResult.model;
+    if (hasFrame) {
+      writeFileSync(contentPath, finalBuf);
+      const [cw, ch] = img.cardSize.split('x').map(Number);
+      finalBuf = await renderFramedImage(finalBuf, img.normalStateConfig, cw, ch);
+    }
     writeFileSync(outPath, finalBuf);
-    console.log(`[图片]   ✓ ${img.name} (via ${model}, ${w}x${h}, r=${radius})`);
-    return { questionId: question.id, name: img.name, path: outPath, size: `${w}x${h}`, model, status: 'done' };
+    console.log(`[图片]   ✓ ${img.name} (via ${model}, ${w}x${h}${hasFrame ? ', framed' : ''})`);
+    return { questionId: question.id, name: img.name, path: outPath, size: hasFrame ? img.cardSize : `${w}x${h}`, model, status: 'done' };
   } catch (err) {
     console.error(`[图片] 全部模型失败 ${question.id}/${img.name}:`, err.message);
     return { questionId: question.id, name: img.name, status: 'failed', error: err.message };
@@ -324,17 +340,31 @@ export async function generateImages(analysisResult, taskDir) {
   const normalResults = await runWithConcurrency(normalTasks, IMG_CONCURRENCY);
 
   const variantResults = [];
+  const contentFilesToClean = new Set();
   for (const { question, img, qDir } of variantTasks) {
     const outPath = join(qDir, `${img.name}.png`);
     try {
+      const contentPath = join(qDir, `${img.baseImageName}_content.png`);
       const basePath = join(qDir, `${img.baseImageName}.png`);
-      if (!existsSync(basePath)) {
-        console.warn(`[图片] 状态变体跳过 — 常态图不存在: ${img.baseImageName}`);
-        variantResults.push({ questionId: question.id, name: img.name, status: 'failed', error: '常态图未生成' });
+      const useContent = img.cardSize && existsSync(contentPath);
+      const srcPath = useContent ? contentPath : basePath;
+
+      if (!existsSync(srcPath)) {
+        console.warn(`[图片] 状态变体跳过 — 源图不存在: ${srcPath}`);
+        variantResults.push({ questionId: question.id, name: img.name, status: 'failed', error: '源图未生成' });
         continue;
       }
-      console.log(`[图片] 状态变体 ${question.id}/${img.name} (${img.stateType})`);
-      const finalBuf = await renderStateImage(basePath, img.stateConfig);
+
+      console.log(`[图片] 状态变体 ${question.id}/${img.name} (${img.stateType}, from ${useContent ? 'content' : 'base'})`);
+      let finalBuf;
+      if (useContent) {
+        const contentBuf = readFileSync(contentPath);
+        const [cw, ch] = img.cardSize.split('x').map(Number);
+        finalBuf = await renderFramedImage(contentBuf, img.stateConfig, cw, ch);
+        contentFilesToClean.add(contentPath);
+      } else {
+        finalBuf = await renderStateImage(basePath, img.stateConfig);
+      }
       writeFileSync(outPath, finalBuf);
       console.log(`[图片]   ✓ ${img.name} (${img.stateType})`);
       variantResults.push({ questionId: question.id, name: img.name, path: outPath, model: 'state_variant', status: 'done' });
@@ -344,5 +374,47 @@ export async function generateImages(analysisResult, taskDir) {
     }
   }
 
-  return [...normalResults.filter(Boolean), ...variantResults];
+  for (const f of contentFilesToClean) {
+    try { unlinkSync(f); } catch (_) { /* ignore */ }
+  }
+
+  const widgetResults = [];
+  for (const question of questions) {
+    const widgets = question.assets?.controlWidgets || [];
+    if (widgets.length === 0) continue;
+    const qDir = join(taskDir, question.id.replace(/\./g, '-'));
+    for (const w of widgets) {
+      const ext = (w.assetUrl || '').split('.').pop() || 'png';
+      const outPath = join(qDir, `${w.name}.${ext}`);
+      try {
+        let srcPath = w.assetPath;
+        if (srcPath && srcPath.startsWith('/data/')) {
+          srcPath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', srcPath);
+        }
+        if (w.assetUrl && w.assetUrl.startsWith('/')) {
+          const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+          srcPath = join(rootDir, w.assetUrl);
+        }
+        if (srcPath && existsSync(srcPath)) {
+          const buf = readFileSync(srcPath);
+          writeFileSync(outPath, buf);
+          console.log(`[控件] ✓ ${question.id}/${w.name}.${ext}`);
+          widgetResults.push({ questionId: question.id, name: w.name, path: outPath, model: 'widget_copy', status: 'done' });
+        } else if (w.assetUrl && !w.assetUrl.startsWith('/')) {
+          const buf = await downloadFile(w.assetUrl);
+          writeFileSync(outPath, buf);
+          console.log(`[控件] ✓ ${question.id}/${w.name}.${ext} (remote)`);
+          widgetResults.push({ questionId: question.id, name: w.name, path: outPath, model: 'widget_copy', status: 'done' });
+        } else {
+          console.warn(`[控件] 跳过 ${question.id}/${w.name} — 素材不存在`);
+          widgetResults.push({ questionId: question.id, name: w.name, status: 'failed', error: '素材文件不存在' });
+        }
+      } catch (err) {
+        console.error(`[控件] 失败 ${question.id}/${w.name}:`, err.message);
+        widgetResults.push({ questionId: question.id, name: w.name, status: 'failed', error: err.message });
+      }
+    }
+  }
+
+  return [...normalResults.filter(Boolean), ...variantResults, ...widgetResults];
 }

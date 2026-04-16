@@ -86,43 +86,64 @@
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148230,
-  "updatedAt": 1776137290747,
+  "updatedAt": 1776336854166,
   "status": "completed",
   "safeTop": 240,
   "safeBottom": 856,
   "canvasPresetId": "default",
   "optionStates": {
-    "selected": {
-      "borderColor": "#3b82f6",
-      "borderWidth": 4,
-      "borderStyle": "dashed",
+    "normal": {
+      "borderWidth": 6,
+      "borderColor": "#ffffff",
+      "borderOpacity": 0,
+      "borderStyle": "solid",
+      "lineCap": "butt",
       "dashLength": 12,
       "dashGap": 6,
-      "lineCap": "round",
-      "borderRadius": 20,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0
+    },
+    "selected": {
+      "borderWidth": 6,
+      "borderColor": "#ffc933",
       "borderOpacity": 1,
-      "fillColor": "#3b82f6",
-      "fillOpacity": 0.15,
-      "gap": 8
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffc933",
+      "fillOpacity": 0
     },
     "correct": {
-      "borderColor": "#10b981",
-      "borderWidth": 4,
+      "borderWidth": 6,
+      "borderColor": "#00cc66",
+      "borderOpacity": 1,
       "borderStyle": "solid",
+      "lineCap": "round",
       "dashLength": 12,
       "dashGap": 6,
-      "lineCap": "round",
-      "borderRadius": 20,
-      "borderOpacity": 1,
-      "fillColor": "#10b981",
-      "fillOpacity": 0.15,
-      "gap": 8
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#00cc66",
+      "fillOpacity": 0.2
     }
   },
   "animationSettings": {
     "fps": 10,
-    "usePalette": true,
     "maxColors": 256,
-    "dither": "bayer"
+    "dither": "bayer",
+    "usePalette": true
+  },
+  "textStyle": {
+    "fontFamily": "方正粗圆斑马英语",
+    "fontSize": 36,
+    "fontColor": "#2f4d90",
+    "bgColor": "#ffffff",
+    "align": "center",
+    "letterSpacing": 0
   }
 }

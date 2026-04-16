@@ -8,69 +8,73 @@
   "voiceStyle": "儿童科普风格，语速适中，亲切活泼",
   "epics": [
     {
-      "id": "c0ctzw",
+      "id": "ftzis5",
       "title": "Epic1",
       "questions": [
         {
-          "id": "E1-1",
-          "type": "多选题",
-          "stem": "",
+          "id": "E1-2",
+          "type": "单选题",
+          "stem": "狮群中谁来承担保卫领地的任务呢？",
           "stemImage": "无",
           "stemImageDesc": "",
-          "correctAnswer": "B",
-          "templateId": "a4149ef8",
-          "artStyle": "实拍",
+          "correctAnswer": "A",
           "options": [
             {
               "label": "A",
-              "text": "一只老鼠",
+              "text": "雄狮",
               "mediaType": "实拍图+文字",
               "imageDesc": ""
             },
             {
               "label": "B",
-              "text": "三只猫",
+              "text": "雌狮团",
               "mediaType": "实拍图+文字",
-              "imageDesc": "三只猫教老虎爬树"
+              "imageDesc": ""
             },
             {
               "label": "C",
-              "text": "科幻地球",
+              "text": "幼狮宝宝们",
               "mediaType": "实拍图+文字",
               "imageDesc": ""
             }
           ],
+          "analysis": "",
+          "examPoint": "狮群成员的分工。",
+          "templateId": "a4149ef8",
           "effects": {
             "opening": {
-              "target": "",
               "description": "",
-              "duration": 4
+              "duration": 4,
+              "target": ""
             },
             "correct": {
+              "description": "一只雄狮在草原上张嘴大吼",
+              "duration": 4,
               "target": "动效区",
-              "description": "科幻地球慢慢旋转",
-              "duration": 4
+              "sourceImage": "",
+              "referenceUrl": ""
             },
             "wrong": {
-              "target": "",
               "description": "",
-              "duration": 4
-            }
+              "duration": 4,
+              "target": ""
+            },
+            "plays": 1
           },
           "voiceLines": [
-            ""
-          ]
+            "狮群中谁来承担保卫领地的任务呢？",
+            "非洲狮社群中，雄狮体型大、肌肉多、鬃毛长，威慑力更强，适合保卫领地。"
+          ],
+          "artStyle": "实拍",
+          "_key": "w7tokg"
         }
       ]
-    },
-    {
-      "id": "ep_mny3afw8",
-      "title": "Epic2",
-      "questions": []
     }
   ],
-  "status": "ready",
+  "status": "done",
   "createdAt": 1775210092982,
-  "updatedAt": 1776148521898,
-  "themeId": "b869e4a6"
+  "updatedAt": 1776341401483,
+  "themeId": "b869e4a6",
+  "ttsEngine": "ttshub",
+  "ttsVoiceId": "shandian"
 }

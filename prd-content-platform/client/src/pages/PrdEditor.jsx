@@ -8,6 +8,62 @@ const VOICE_TIMINGS = ['进入时自动播放', '点击播放按钮', '无'];
 const EFFECT_TARGETS = ['无', '题干图', '选项A', '选项B', '选项C', '选项D', '背景', '全屏', '动效区'];
 const BG_STYLES = ['自然纪录片实拍风格', '卡通2D插画', '低幼可爱插画', '写实3D渲染'];
 
+const TTS_ENGINES = {
+  ttshub: {
+    label: '猿辅导TTS',
+    voices: [
+      { id: 'xiaoyuan', label: '小媛' },
+      { id: 'shandian', label: '闪电' },
+      { id: 'pipi_v2', label: '皮皮' },
+    ],
+  },
+  doubao: {
+    label: '豆包',
+    voices: [
+      { id: 'zh_female_vv_uranus_bigtts', label: '温柔女声' },
+      { id: 'zh_female_shuangkuai_bigtts', label: '爽快女声' },
+      { id: 'zh_female_qingche_bigtts', label: '清澈女声' },
+      { id: 'zh_female_wanwanxiaohe_bigtts', label: '甜美女声' },
+      { id: 'zh_male_chunhou_bigtts', label: '醇厚男声' },
+      { id: 'zh_male_jingqiangkanye_bigtts', label: '京腔男声' },
+      { id: 'zh_female_tianmeixiaoyuan_bigtts', label: '甜美小媛' },
+      { id: 'zh_male_wennuanahu_bigtts', label: '温暖阿虎' },
+    ],
+  },
+  minimax: {
+    label: 'Minimax',
+    voices: [
+      { id: 'male-qn-qingse', label: '青涩男声' },
+      { id: 'female-shaonv', label: '少女女声' },
+      { id: 'female-yujie', label: '御姐女声' },
+      { id: 'male-qn-jingying', label: '精英男声' },
+      { id: 'female-chengshu', label: '成熟女声' },
+      { id: 'male-qn-badao', label: '霸道男声' },
+    ],
+  },
+  gemini: {
+    label: 'Gemini',
+    voices: [
+      { id: 'Kore', label: 'Kore (女声)' },
+      { id: 'Charon', label: 'Charon (男声)' },
+      { id: 'Fenrir', label: 'Fenrir (男声)' },
+      { id: 'Aoede', label: 'Aoede (女声)' },
+      { id: 'Puck', label: 'Puck (男声)' },
+    ],
+  },
+  azure: {
+    label: 'Azure',
+    voices: [
+      { id: 'zh-CN-XiaoxiaoNeural', label: '晓晓 (女声)' },
+      { id: 'zh-CN-YunxiNeural', label: '云希 (男声)' },
+      { id: 'zh-CN-XiaoyiNeural', label: '晓伊 (女声)' },
+      { id: 'zh-CN-YunjianNeural', label: '云健 (男声)' },
+      { id: 'zh-CN-XiaochenNeural', label: '晓辰 (女声)' },
+      { id: 'zh-CN-YunfengNeural', label: '云枫 (男声)' },
+    ],
+  },
+};
+
 const TYPE_TO_QT = {
   '单选题': 'choice', '多选题': 'choice',
   '拖拽题': 'drag', '连线题': 'connect', '点选题': 'hotspot',
@@ -19,6 +75,7 @@ function uid() { return Math.random().toString(36).slice(2, 8); }
 
 function newQuestion(epicIdx, qIdx) {
   return {
+    _key: uid(),
     id: `E${epicIdx + 1}-${qIdx + 1}`, type: '单选题', stem: '', stemImage: '无', stemImageDesc: '',
     correctAnswer: '',
     options: [
@@ -289,12 +346,135 @@ function applyTemplateToQuestion(qq, tpl, bgStyle) {
 }
 
 /* ─── Inline-Editable Question Card ─── */
-function QuestionCard({ q, ei, qi, templates, update, onRemove, prdId }) {
+function PromptPreview({ prompt, onEdit, onClear, type, backgroundStyle, duration }) {
+  const [showModal, setShowModal] = useState(false);
+  const [enDraft, setEnDraft] = useState(prompt || '');
+  const [zhDraft, setZhDraft] = useState('');
+  const [translating, setTranslating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => { setEnDraft(prompt || ''); }, [prompt]);
+  useEffect(() => { if (!showModal) setZhDraft(''); }, [showModal]);
+
+  async function translateToZh() {
+    if (!enDraft || translating) return;
+    setTranslating(true);
+    try {
+      const r = await fetch('/api/prd/translate-prompt', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: enDraft, direction: 'en2zh' }),
+      });
+      const d = await r.json();
+      if (d.success) setZhDraft(d.data.result);
+    } catch (e) { console.error('翻译失败:', e); }
+    setTranslating(false);
+  }
+
+  async function syncToEn() {
+    if (!zhDraft || syncing) return;
+    setSyncing(true);
+    try {
+      const r = await fetch('/api/prd/translate-prompt', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: zhDraft, direction: 'zh2en', type, backgroundStyle, duration }),
+      });
+      const d = await r.json();
+      if (d.success) setEnDraft(d.data.result);
+    } catch (e) { console.error('同步失败:', e); }
+    setSyncing(false);
+  }
+
+  if (!prompt) return null;
+
+  const btnBase = { border: 'none', borderRadius: 5, padding: '6px 14px', fontSize: 12, cursor: 'pointer' };
+
+  return (
+    <>
+      <span onClick={e => { e.stopPropagation(); setShowModal(true); }}
+        style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', flexShrink: 0, cursor: 'pointer', border: '1px solid #fff', boxShadow: '0 0 0 1px #22c55e' }}
+        title={'已有AI优化prompt，点击查看/编辑\n' + (prompt.length > 100 ? prompt.substring(0, 100) + '...' : prompt)} />
+      {showModal && (
+        <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)' }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 20, width: 760, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>AI 优化 Prompt</span>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#94a3b8' }}>×</button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, flex: 1, minHeight: 0 }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b' }}>中文翻译</span>
+                  <button onClick={translateToZh} disabled={!enDraft || translating}
+                    style={{ ...btnBase, background: translating ? '#94a3b8' : '#f0fdf4', color: translating ? '#fff' : '#15803d', padding: '2px 10px', fontSize: 11, opacity: enDraft ? 1 : 0.4 }}>
+                    {translating ? '翻译中...' : '翻译中文'}</button>
+                </div>
+                <textarea value={zhDraft} onChange={e => setZhDraft(e.target.value)} placeholder="点击上方[翻译中文]按钮，或直接编写中文描述..."
+                  style={{ flex: 1, minHeight: 160, fontSize: 12, lineHeight: 1.6, border: '1px solid #e2e8f0', borderRadius: 6, padding: 10, resize: 'none', fontFamily: 'inherit', color: '#334155', outline: 'none' }} />
+                <button onClick={syncToEn} disabled={!zhDraft || syncing}
+                  style={{ ...btnBase, background: syncing ? '#94a3b8' : '#059669', color: '#fff', alignSelf: 'flex-end', opacity: zhDraft ? 1 : 0.4 }}>
+                  {syncing ? '同步中...' : '同步英文 →'}</button>
+              </div>
+
+              <div style={{ width: 1, background: '#e2e8f0', flexShrink: 0 }} />
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#64748b' }}>英文 Prompt（用于生成）</span>
+                <textarea value={enDraft} onChange={e => setEnDraft(e.target.value)}
+                  style={{ flex: 1, minHeight: 160, fontSize: 12, lineHeight: 1.6, border: '1px solid #e2e8f0', borderRadius: 6, padding: 10, resize: 'none', fontFamily: 'inherit', color: '#334155', outline: 'none' }} />
+                <span style={{ fontSize: 10, color: '#94a3b8', textAlign: 'right' }}>{enDraft.length} 字符</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+              <button onClick={() => { onClear(); setShowModal(false); }}
+                style={{ ...btnBase, background: '#fee2e2', color: '#dc2626' }}>清除优化</button>
+              <span style={{ flex: 1 }} />
+              <button onClick={() => setShowModal(false)}
+                style={{ ...btnBase, background: '#f1f5f9', color: '#64748b' }}>取消</button>
+              <button onClick={() => { onEdit(enDraft); setShowModal(false); }}
+                style={{ ...btnBase, background: '#2563eb', color: '#fff' }}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function QuestionCard({ q, ei, qi, templates, update, onRemove, prdId, backgroundStyle }) {
   const opts = q.options || [];
   const [expanded, setExpanded] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [optimizing, setOptimizing] = useState({});
 
   function uq(fn) { update(p => { const qq = p.epics?.[ei]?.questions?.[qi]; if (qq) fn(qq); }); }
+
+  async function optimizePrompt(type, key, currentDesc, duration) {
+    if (!currentDesc || optimizing[key]) return;
+    setOptimizing(prev => ({ ...prev, [key]: true }));
+    try {
+      const r = await fetch('/api/prd/optimize-prompt', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: currentDesc, type, backgroundStyle, duration }),
+      });
+      const d = await r.json();
+      if (d.success) {
+        uq(qq => {
+          if (type === 'animation' && qq.effects?.[key]) {
+            qq.effects[key].optimizedPrompt = d.data.optimized;
+          } else if (type === 'image') {
+            if (key === 'stemImageDesc') qq.stemOptimizedPrompt = d.data.optimized;
+            else {
+              const idx = parseInt(key.replace('opt_', ''));
+              if (qq.options[idx]) qq.options[idx].optimizedImagePrompt = d.data.optimized;
+            }
+          }
+        });
+      }
+    } catch (err) { console.error('优化失败:', err); }
+    setOptimizing(prev => ({ ...prev, [key]: false }));
+  }
 
   const tpl = q.templateId ? templates.find(t => t.id === q.templateId) : null;
 
@@ -440,6 +620,13 @@ function QuestionCard({ q, ei, qi, templates, update, onRemove, prdId }) {
                     ) : (
                       <>
                         <InText value={opt.imageDesc} onChange={v => uq(qq => { qq.options[oi].imageDesc = v; })} placeholder="图片描述" style={{ fontSize: 11, flex: 1, minWidth: 60 }} />
+                        <button onClick={e => { e.stopPropagation(); optimizePrompt('image', `opt_${oi}`, opt.imageDesc || opt.text); }}
+                          disabled={!(opt.imageDesc || opt.text) || optimizing[`opt_${oi}`]}
+                          style={{ background: optimizing[`opt_${oi}`] ? '#94a3b8' : '#8b5cf6', color: '#fff', border: 'none', borderRadius: 3, padding: '1px 6px', fontSize: 10, cursor: (opt.imageDesc || opt.text) && !optimizing[`opt_${oi}`] ? 'pointer' : 'default', flexShrink: 0, opacity: (opt.imageDesc || opt.text) ? 1 : 0.4 }}
+                          title="AI 优化图片描述">{optimizing[`opt_${oi}`] ? '...' : 'AI优化'}</button>
+                        <PromptPreview prompt={opt.optimizedImagePrompt} type="image" backgroundStyle={backgroundStyle}
+                          onEdit={v => uq(qq => { qq.options[oi].optimizedImagePrompt = v; })}
+                          onClear={() => uq(qq => { delete qq.options[oi].optimizedImagePrompt; })} />
                         <AssetUpload prdId={prdId} label="参考" currentUrl={opt.referenceUrl}
                           onUploaded={url => uq(qq => { qq.options[oi].referenceUrl = url; })} onClear={() => uq(qq => { qq.options[oi].referenceUrl = ''; })} />
                       </>
@@ -476,7 +663,20 @@ function QuestionCard({ q, ei, qi, templates, update, onRemove, prdId }) {
           {expanded && (
             <div style={{ marginTop: 8, padding: '10px 12px', background: '#f8fafc', borderRadius: 6, border: '1px solid #f1f5f9' }}>
               <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>动效需求</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>动效需求</span>
+                  {(() => {
+                    const plays = q.effects?.plays ?? 0;
+                    const mode = plays === 0 ? 'loop' : plays === 1 ? 'once' : 'n';
+                    const btnStyle = (active) => ({ fontSize: 10, padding: '1px 6px', border: '1px solid', borderRadius: 3, cursor: 'pointer', borderColor: active ? '#6366f1' : '#cbd5e1', background: active ? '#6366f1' : '#fff', color: active ? '#fff' : '#64748b' });
+                    return (<>
+                      <button style={btnStyle(mode === 'once')} onClick={() => uq(qq => { if (!qq.effects) qq.effects = {}; qq.effects.plays = 1; })}>单次</button>
+                      <button style={btnStyle(mode === 'n')} onClick={() => uq(qq => { if (!qq.effects) qq.effects = {}; qq.effects.plays = qq.effects.plays > 1 ? qq.effects.plays : 2; })}>N次</button>
+                      {mode === 'n' && <input type="number" min="2" max="99" value={plays} onChange={e => uq(qq => { if (!qq.effects) qq.effects = {}; qq.effects.plays = Math.max(2, Math.min(99, Number(e.target.value) || 2)); })} style={{ width: 32, fontSize: 10, textAlign: 'center', border: '1px solid #c7d2fe', borderRadius: 3, padding: '1px 2px' }} />}
+                      <button style={btnStyle(mode === 'loop')} onClick={() => uq(qq => { if (!qq.effects) qq.effects = {}; qq.effects.plays = 0; })}>循环</button>
+                    </>);
+                  })()}
+                </div>
                 {[['opening', '开场'], ['correct', '正确反馈'], ['wrong', '错误反馈']].map(([key, label]) => {
                   const eff = q.effects?.[key] || {};
                   return (
@@ -484,9 +684,23 @@ function QuestionCard({ q, ei, qi, templates, update, onRemove, prdId }) {
                       <span style={{ color: '#64748b', width: 56, flexShrink: 0 }}>{label}：</span>
                       <InSelect value={eff.target || '无'} options={EFFECT_TARGETS} onChange={v => uq(qq => { if (!qq.effects[key]) qq.effects[key] = {}; qq.effects[key].target = v === '无' ? '' : v; })} style={{ fontSize: 11 }} />
                       <InText value={eff.description} onChange={v => uq(qq => { if (!qq.effects[key]) qq.effects[key] = {}; qq.effects[key].description = v; })} placeholder="效果描述..." style={{ fontSize: 11, flex: 1, minWidth: 80 }} />
-                      <AssetUpload prdId={prdId} label="参考帧" currentUrl={eff.referenceUrl}
+                      <button onClick={e => { e.stopPropagation(); optimizePrompt('animation', key, eff.description, eff.duration); }}
+                        disabled={!eff.description || optimizing[key]}
+                        style={{ background: optimizing[key] ? '#94a3b8' : '#8b5cf6', color: '#fff', border: 'none', borderRadius: 3, padding: '1px 6px', fontSize: 10, cursor: eff.description && !optimizing[key] ? 'pointer' : 'default', flexShrink: 0, opacity: eff.description ? 1 : 0.4 }}
+                        title="AI 优化描述语，生成更适合视频引擎的 prompt">{optimizing[key] ? '优化中...' : 'AI优化'}</button>
+                      <PromptPreview prompt={eff.optimizedPrompt} type="animation" backgroundStyle={backgroundStyle} duration={eff.duration}
+                        onEdit={v => uq(qq => { if (qq.effects?.[key]) qq.effects[key].optimizedPrompt = v; })}
+                        onClear={() => uq(qq => { if (qq.effects?.[key]) delete qq.effects[key].optimizedPrompt; })} />
+                      <select value={eff.sourceImage || ''} onChange={e => uq(qq => { if (!qq.effects[key]) qq.effects[key] = {}; qq.effects[key].sourceImage = e.target.value; if (e.target.value) qq.effects[key].referenceUrl = ''; })}
+                        style={{ fontSize: 10, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 3, padding: '1px 2px', color: eff.sourceImage ? '#059669' : '#94a3b8', flexShrink: 0 }}
+                        title="首帧来源：使用已生成的选项图/题干图作为动效首帧">
+                        <option value="">首帧：无</option>
+                        {opts.map((o, oi) => <option key={oi} value={`option_${o.label}`}>首帧：选项{o.label}图</option>)}
+                        {q.stemImage && q.stemImage !== '无' && <option value="stem">首帧：题干图</option>}
+                      </select>
+                      {!eff.sourceImage && <AssetUpload prdId={prdId} label="参考帧" currentUrl={eff.referenceUrl}
                         onUploaded={url => uq(qq => { if (!qq.effects[key]) qq.effects[key] = {}; qq.effects[key].referenceUrl = url; })}
-                        onClear={() => uq(qq => { if (qq.effects?.[key]) qq.effects[key].referenceUrl = ''; })} />
+                        onClear={() => uq(qq => { if (qq.effects?.[key]) qq.effects[key].referenceUrl = ''; })} />}
                       <InText value={eff.duration || 4} onChange={v => uq(qq => { if (!qq.effects[key]) qq.effects[key] = {}; qq.effects[key].duration = Math.max(2, Math.min(10, Number(v) || 4)); })} style={{ fontSize: 11, width: 32, textAlign: 'center' }} />
                       <span style={{ color: '#94a3b8', fontSize: 11, flexShrink: 0 }}>秒</span>
                     </div>
@@ -552,6 +766,8 @@ export default function PrdEditor() {
   const [templates, setTemplates] = useState([]);
   const [themes, setThemes] = useState([]);
   const [expandedEpics, setExpandedEpics] = useState({});
+  const [dragSource, setDragSource] = useState(null);
+  const [dragTarget, setDragTarget] = useState(null);
   const autoSaveRef = useRef(null);
 
   useEffect(() => {
@@ -561,11 +777,16 @@ export default function PrdEditor() {
 
   useEffect(() => {
     if (isNew) {
-      setPrd({ name: '', productLine: '', episode: '', theme: '', backgroundStyle: '自然纪录片实拍风格', voiceStyle: '儿童科普风格，语速适中，亲切活泼', epics: [newEpic(0)], status: 'draft' });
+      setPrd({ name: '', productLine: '', episode: '', theme: '', backgroundStyle: '自然纪录片实拍风格', voiceStyle: '儿童科普风格，语速适中，亲切活泼', ttsEngine: 'ttshub', ttsVoiceId: 'xiaoyuan', epics: [newEpic(0)], status: 'draft' });
       setExpandedEpics({ 0: true });
     } else {
       fetch(`/api/prd/${id}`).then(r => r.json()).then(d => {
-        if (d.success) { setPrd(d.data); const exp = {}; (d.data.epics || []).forEach((_, i) => { exp[i] = true; }); setExpandedEpics(exp); }
+        if (d.success) {
+          const data = d.data;
+          (data.epics || []).forEach(ep => { (ep.questions || []).forEach(qq => { if (!qq._key) qq._key = uid(); }); });
+          setPrd(data);
+          const exp = {}; (data.epics || []).forEach((_, i) => { exp[i] = true; }); setExpandedEpics(exp);
+        }
       });
     }
   }, [id, isNew]);
@@ -597,6 +818,31 @@ export default function PrdEditor() {
   function removeEpic(idx) { if (!confirm('确定删除此 Epic？')) return; update(p => { p.epics.splice(idx, 1); }); }
   function addQuestion(epicIdx) { update(p => { const qs = p.epics[epicIdx].questions; qs.push(newQuestion(epicIdx, qs.length)); }); }
   function removeQuestion(epicIdx, qIdx) { if (!confirm('确定删除此题？')) return; update(p => { p.epics[epicIdx].questions.splice(qIdx, 1); }); }
+
+  function handleQuestionDrop(toEpic, toIdx) {
+    if (!dragSource) return;
+    const { ei: fromEpic, qi: fromIdx } = dragSource;
+    if (fromEpic === toEpic && fromIdx === toIdx) { setDragSource(null); setDragTarget(null); return; }
+    update(p => {
+      const [moved] = p.epics[fromEpic].questions.splice(fromIdx, 1);
+      const adjustedIdx = (fromEpic === toEpic && fromIdx < toIdx) ? toIdx - 1 : toIdx;
+      p.epics[toEpic].questions.splice(adjustedIdx, 0, moved);
+    });
+    setDragSource(null);
+    setDragTarget(null);
+  }
+
+  function handleEpicDrop(toEpic) {
+    if (!dragSource) return;
+    const { ei: fromEpic, qi: fromIdx } = dragSource;
+    update(p => {
+      const [moved] = p.epics[fromEpic].questions.splice(fromIdx, 1);
+      p.epics[toEpic].questions.push(moved);
+    });
+    setExpandedEpics(prev => ({ ...prev, [toEpic]: true }));
+    setDragSource(null);
+    setDragTarget(null);
+  }
 
   const [toast, setToast] = useState(null);
   function showToast(msg, type) {
@@ -646,8 +892,8 @@ export default function PrdEditor() {
   const inp = 'glass-input';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)', margin: '-20px -24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px', borderBottom: '1px solid rgba(56,189,248,0.08)', background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(12px)', flexShrink: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - var(--nav-height, 64px))', margin: '-29px -32px -28px', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 14px', borderBottom: '1px solid rgba(56,189,248,0.08)', background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(12px)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 100 }}>
         <button className="btn btn-glass btn-sm" onClick={() => navigate('/prd')}>← 返回</button>
         <div style={{ width: 1, height: 18, background: 'rgba(56,189,248,0.15)' }} />
         <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>主题</span>
@@ -679,6 +925,19 @@ export default function PrdEditor() {
             {BG_STYLES.map(s => <option key={s}>{s}</option>)}
           </select>
         </ResizableField>
+        <div style={{ width: 1, height: 18, background: 'rgba(56,189,248,0.15)' }} />
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>配音引擎</span>
+        <select className={inp} style={{ width: 80 }} value={prd.ttsEngine || 'ttshub'} onChange={e => {
+          const eng = e.target.value;
+          const firstVoice = TTS_ENGINES[eng]?.voices?.[0]?.id || '';
+          update(p => { p.ttsEngine = eng; p.ttsVoiceId = firstVoice; });
+        }}>
+          {Object.entries(TTS_ENGINES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        </select>
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>音色</span>
+        <select className={inp} style={{ width: 110 }} value={prd.ttsVoiceId || ''} onChange={e => update(p => { p.ttsVoiceId = e.target.value; })}>
+          {(TTS_ENGINES[prd.ttsEngine || 'ttshub']?.voices || []).map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
+        </select>
         <span style={{ flex: 1 }} />
         <span style={{ fontSize: 11, color: dirty ? '#eab308' : 'var(--text-muted)' }}>{saving ? '保存中...' : dirty ? '未保存' : '已保存'}</span>
         <button className="btn btn-glass btn-sm" onClick={() => save(prd)} disabled={saving}>保存</button>
@@ -703,13 +962,19 @@ export default function PrdEditor() {
       )}
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ width: 180, borderRight: '1px solid rgba(56,189,248,0.08)', display: 'flex', flexDirection: 'column', background: 'rgba(15,23,42,0.3)', flexShrink: 0 }}>
-          <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(56,189,248,0.06)', fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>大纲</div>
+        <div style={{ width: 220, borderRight: '1px solid rgba(56,189,248,0.08)', display: 'flex', flexDirection: 'column', background: 'rgba(15,23,42,0.3)', flexShrink: 0 }}>
+          <div style={{ padding: '8px 10px', borderBottom: '1px solid rgba(56,189,248,0.06)', fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>大纲</div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
             {prd.epics.map((epic, ei) => (
               <div key={epic.id || ei}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer', fontSize: 11, gap: 4, userSelect: 'none' }}
-                  onClick={() => setExpandedEpics(prev => ({ ...prev, [ei]: !prev[ei] }))}>
+                <div style={{
+                    display: 'flex', alignItems: 'center', padding: '4px 8px', cursor: 'pointer', fontSize: 12, gap: 4, userSelect: 'none',
+                    background: dragSource && dragTarget?.ei === ei && dragTarget?.qi === -1 ? 'rgba(37,99,235,0.1)' : 'transparent',
+                  }}
+                  onClick={() => setExpandedEpics(prev => ({ ...prev, [ei]: !prev[ei] }))}
+                  onDragOver={e => { if (dragSource) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragTarget({ ei, qi: -1 }); } }}
+                  onDragLeave={() => setDragTarget(null)}
+                  onDrop={e => { e.preventDefault(); handleEpicDrop(ei); }}>
                   <span style={{ fontSize: 9, width: 10, textAlign: 'center', transition: 'transform .15s', transform: expandedEpics[ei] ? 'rotate(90deg)' : '' }}>▶</span>
                   <span style={{ flex: 1, fontWeight: 600 }}>{epic.title}</span>
                   <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{epic.questions.length}</span>
@@ -718,22 +983,33 @@ export default function PrdEditor() {
                 {expandedEpics[ei] && (
                   <div>
                     {epic.questions.map((qq, qi) => (
-                      <div key={qq.id || qi} onClick={() => scrollToCard(ei, qi)}
-                        style={{ padding: '3px 8px 3px 22px', cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', gap: 3 }}>
-                        <span style={{ color: 'var(--text-muted)', width: 32 }}>{qq.id}</span>
-                        <span style={{ flex: 1 }}>{qq.type}</span>
+                      <div key={qq._key || qi}
+                        draggable
+                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; setDragSource({ ei, qi }); e.currentTarget.style.opacity = '0.4'; }}
+                        onDragEnd={e => { e.currentTarget.style.opacity = '1'; setDragSource(null); setDragTarget(null); }}
+                        onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragTarget({ ei, qi }); }}
+                        onDragLeave={() => setDragTarget(null)}
+                        onDrop={e => { e.preventDefault(); handleQuestionDrop(ei, qi); }}
+                        onClick={() => scrollToCard(ei, qi)}
+                        style={{
+                          padding: '4px 8px 4px 22px', cursor: dragSource ? 'grabbing' : 'pointer', fontSize: 11,
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          borderTop: dragTarget?.ei === ei && dragTarget?.qi === qi ? '2px solid #2563eb' : '2px solid transparent',
+                        }}>
+                        <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 11, width: 48, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{qq.id || `#${qi + 1}`}</span>
+                        <span style={{ flex: 1, color: 'var(--text-secondary, #94a3b8)' }}>{qq.type}</span>
                         {qq.templateId && <span style={{ fontSize: 8, background: 'rgba(56,189,248,0.15)', color: 'var(--accent)', padding: '0 4px', borderRadius: 3 }}>T</span>}
                       </div>
                     ))}
                     <div style={{ padding: '3px 8px 3px 22px' }}>
-                      <button onClick={() => addQuestion(ei)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 10 }}>+ 添加题目</button>
+                      <button onClick={() => addQuestion(ei)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11 }}>+ 添加题目</button>
                     </div>
                   </div>
                 )}
               </div>
             ))}
             <div style={{ padding: '6px 10px' }}>
-              <button className="btn btn-glass btn-sm" style={{ width: '100%', fontSize: 10 }} onClick={addEpic}>+ 添加 Epic</button>
+              <button className="btn btn-glass btn-sm" style={{ width: '100%', fontSize: 11 }} onClick={addEpic}>+ 添加 Epic</button>
             </div>
           </div>
         </div>
@@ -751,8 +1027,8 @@ export default function PrdEditor() {
                 <span style={{ fontSize: 11, color: '#94a3b8' }}>{epic.questions.length} 道题</span>
               </div>
               {epic.questions.map((qq, qi) => (
-                <div key={qq.id || qi} id={`q-card-${ei}-${qi}`}>
-                  <QuestionCard q={qq} ei={ei} qi={qi} templates={templates} update={update} onRemove={() => removeQuestion(ei, qi)} prdId={prd.id} />
+                <div key={qq._key || qi} id={`q-card-${ei}-${qi}`}>
+                  <QuestionCard q={qq} ei={ei} qi={qi} templates={templates} update={update} onRemove={() => removeQuestion(ei, qi)} prdId={prd.id} backgroundStyle={prd.backgroundStyle} />
                 </div>
               ))}
               <button onClick={() => addQuestion(ei)}

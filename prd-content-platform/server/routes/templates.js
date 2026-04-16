@@ -1,14 +1,31 @@
 import { Router } from 'express';
-import { join, dirname } from 'path';
+import { join, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, readdirSync } from 'fs';
 import { randomUUID } from 'crypto';
+import multer from 'multer';
 import { getAllPresets, CONFIG_KEY_MAP } from '../data/presets.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', '..', 'data', 'templates');
+const ASSET_DIR = join(__dirname, '..', '..', 'data', 'template-assets');
 const CANVAS_SETTINGS_FILE = join(__dirname, '..', '..', 'data', 'canvas-settings.json');
 mkdirSync(DATA_DIR, { recursive: true });
+mkdirSync(ASSET_DIR, { recursive: true });
+
+const assetUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, _file, cb) => {
+      const tplDir = join(ASSET_DIR, req.params.id);
+      mkdirSync(tplDir, { recursive: true });
+      cb(null, tplDir);
+    },
+    filename: (_req, file, cb) => {
+      cb(null, `${Date.now()}_${randomUUID().slice(0, 6)}${extname(file.originalname)}`);
+    },
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 function readAll() {
   try {
@@ -68,6 +85,31 @@ router.post('/seed', (_req, res) => {
     added++;
   }
   res.json({ success: true, data: { total: presets.length, added, skipped: presets.length - added } });
+});
+
+router.put('/sync-option-states', (req, res) => {
+  const { optionStates } = req.body;
+  if (!optionStates) return res.status(400).json({ success: false, error: '缺少 optionStates' });
+  const files = readdirSync(DATA_DIR).filter(f => f.endsWith('.json'));
+  let count = 0;
+  for (const f of files) {
+    const fp = join(DATA_DIR, f);
+    try {
+      const tpl = JSON.parse(readFileSync(fp, 'utf-8'));
+      tpl.optionStates = optionStates;
+      tpl.updatedAt = Date.now();
+      writeFileSync(fp, JSON.stringify(tpl, null, 2), 'utf-8');
+      count++;
+    } catch {}
+  }
+  res.json({ success: true, data: { updated: count } });
+});
+
+router.post('/:id/upload-asset', assetUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, error: '未选择文件' });
+  const relPath = `/data/template-assets/${req.params.id}/${req.file.filename}`;
+  const url = `/template-assets/${req.params.id}/${req.file.filename}`;
+  res.json({ success: true, data: { url, path: relPath, filename: req.file.filename } });
 });
 
 router.get('/:id', (req, res) => {

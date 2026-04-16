@@ -70,9 +70,50 @@
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148229,
-  "updatedAt": 1775209024850,
+  "updatedAt": 1776336854169,
   "status": "completed",
   "safeTop": 240,
   "safeBottom": 856,
-  "canvasPresetId": "default"
+  "canvasPresetId": "default",
+  "optionStates": {
+    "normal": {
+      "borderWidth": 6,
+      "borderColor": "#ffffff",
+      "borderOpacity": 0,
+      "borderStyle": "solid",
+      "lineCap": "butt",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0
+    },
+    "selected": {
+      "borderWidth": 6,
+      "borderColor": "#ffc933",
+      "borderOpacity": 1,
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffc933",
+      "fillOpacity": 0
+    },
+    "correct": {
+      "borderWidth": 6,
+      "borderColor": "#00cc66",
+      "borderOpacity": 1,
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#00cc66",
+      "fillOpacity": 0.2
+    }
+  }
 }

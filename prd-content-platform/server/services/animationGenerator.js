@@ -1,9 +1,9 @@
 import { join } from 'path';
-import { mkdirSync, writeFileSync, unlinkSync } from 'fs';
+import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { createCanvas } from 'canvas';
-import { seedanceTextToVideo, seedanceImageToVideo, downloadFile } from './modaiClient.js';
+import { seedanceTextToVideo, seedanceImageToVideo, downloadFile, uploadFileToCloud } from './modaiClient.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -42,6 +42,7 @@ async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
   const padding = opts.padding || null;
   const maxColors = opts.maxColors ?? 256;
   const dither = opts.dither || 'none';
+  const plays = String(opts.plays ?? 0);
   const usePalette = maxColors > 0 && maxColors <= 256;
 
   const needsMask = borderRadius > 0 && w && h;
@@ -50,7 +51,7 @@ async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
 
   if (!needsMask && !needsPad) {
     if (usePalette) {
-      const palettePath = outputPath.replace(/\.apng$/, '_palette.png');
+      const palettePath = outputPath.replace(/\.png$/, '_palette.png');
       await execFileAsync('ffmpeg', [
         '-y', '-i', videoPath,
         '-vf', `${scaleFilter},palettegen=max_colors=${maxColors}`,
@@ -60,7 +61,7 @@ async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
       await execFileAsync('ffmpeg', [
         '-y', '-i', videoPath, '-i', palettePath,
         '-filter_complex', `[0:v]${scaleFilter}[v];[v][1:v]paletteuse=dither=${ditherOpt}`,
-        '-plays', '0',
+        '-plays', plays, '-f', 'apng',
         outputPath,
       ], { timeout: 120_000 });
       try { unlinkSync(palettePath); } catch {}
@@ -68,14 +69,14 @@ async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
       await execFileAsync('ffmpeg', [
         '-y', '-i', videoPath,
         '-vf', scaleFilter,
-        '-plays', '0',
+        '-plays', plays, '-f', 'apng',
         outputPath,
       ], { timeout: 120_000 });
     }
     return;
   }
 
-  const maskPath = outputPath.replace(/\.apng$/, '_mask.png');
+  const maskPath = outputPath.replace(/\.png$/, '_mask.png');
   let filterParts = [];
   let inputs = ['-y', '-i', videoPath];
 
@@ -105,7 +106,7 @@ async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
   }
 
   if (usePalette) {
-    const palettePath = outputPath.replace(/\.apng$/, '_palette.png');
+    const palettePath = outputPath.replace(/\.png$/, '_palette.png');
     const paletteFilter = filterParts.join(';') + ';[out]palettegen=max_colors=' + maxColors + '[pal]';
     await execFileAsync('ffmpeg', [
       ...inputs,
@@ -122,7 +123,7 @@ async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
       ...inputs,
       '-filter_complex', useFilter,
       '-map', '[final]',
-      '-plays', '0',
+      '-plays', plays, '-f', 'apng',
       outputPath,
     ], { timeout: 120_000 });
     try { unlinkSync(palettePath); } catch {}
@@ -132,7 +133,7 @@ async function videoToApng(videoPath, outputPath, w, h, opts = {}) {
       ...inputs,
       '-filter_complex', filterComplex,
       '-map', '[out]',
-      '-plays', '0',
+      '-plays', plays, '-f', 'apng',
       outputPath,
     ], { timeout: 120_000 });
   }
@@ -154,9 +155,9 @@ async function runWithConcurrency(taskFns, concurrency) {
   return Promise.all(results);
 }
 
-async function processOneAnimation(question, anim, qDir) {
+async function processOneAnimation(question, anim, qDir, taskId) {
   const tmpVideo = join(qDir, `${anim.name}_tmp.mp4`);
-  const outPath = join(qDir, `${anim.name}.apng`);
+  const outPath = join(qDir, `${anim.name}.png`);
 
   try {
     if (!anim.description) {
@@ -172,10 +173,37 @@ async function processOneAnimation(question, anim, qDir) {
     console.log(`[动效] 描述: ${anim.description}`);
 
     let videoResult;
-    if (anim.referenceUrl) {
-      let refUrl = anim.referenceUrl;
-      if (refUrl.startsWith('/')) refUrl = `http://localhost:3200${refUrl}`;
-      console.log(`[动效]   使用参考帧: ${refUrl}`);
+    let refUrl = null;
+
+    if (anim.sourceImageName) {
+      const imgPath = join(qDir, `${anim.sourceImageName}.png`);
+      if (existsSync(imgPath)) {
+        try {
+          const imgBuf = readFileSync(imgPath);
+          refUrl = await uploadFileToCloud(imgBuf, `${anim.sourceImageName}.png`, 'image/png');
+          console.log(`[动效]   首帧来源: ${anim.sourceImageName} → 已上传云端`);
+        } catch (uploadErr) {
+          console.warn(`[动效]   首帧图片上传失败: ${uploadErr.message}，降级为文生视频`);
+        }
+      } else {
+        console.warn(`[动效]   首帧图片未找到: ${imgPath}，降级为文生视频`);
+      }
+    } else if (anim.referenceUrl) {
+      refUrl = anim.referenceUrl;
+      if (refUrl.startsWith('/')) {
+        try {
+          const imgBuf = readFileSync(join(qDir, '..', '..', refUrl));
+          refUrl = await uploadFileToCloud(imgBuf, 'ref_frame.png', 'image/png');
+          console.log(`[动效]   参考帧已上传云端`);
+        } catch (uploadErr) {
+          console.warn(`[动效]   参考帧上传失败: ${uploadErr.message}，降级为文生视频`);
+          refUrl = null;
+        }
+      }
+      if (refUrl) console.log(`[动效]   使用参考帧: ${refUrl}`);
+    }
+
+    if (refUrl) {
       videoResult = await seedanceImageToVideo(anim.description, [refUrl], {
         aspectRatio: aspect, duration, resolution: '720p',
       });
@@ -196,11 +224,11 @@ async function processOneAnimation(question, anim, qDir) {
     const animMaxColors = anim.maxColors ?? 256;
     const animDither = anim.dither || 'none';
     console.log(`[动效] 转换 APNG (${aw || 360}x${ah || 'auto'}, r=${borderRadius}, ${animFps}fps, ${animMaxColors > 0 ? animMaxColors + '色' : '不压缩'}${padding ? `, pad=${padding.leftPad}+${padding.rightPad}→${padding.totalWidth}` : ''}) ...`);
-    await videoToApng(tmpVideo, outPath, aw, ah, { fps: animFps, borderRadius, padding, maxColors: animMaxColors, dither: animDither });
+    await videoToApng(tmpVideo, outPath, aw, ah, { fps: animFps, borderRadius, padding, maxColors: animMaxColors, dither: animDither, plays: anim.plays ?? 0 });
 
     try { unlinkSync(tmpVideo); } catch {}
 
-    console.log(`[动效] 完成 ${question.id}/${anim.name}.apng`);
+    console.log(`[动效] 完成 ${question.id}/${anim.name}.png`);
     return {
       questionId: question.id, name: anim.name,
       description: anim.description, duration,
@@ -219,6 +247,7 @@ async function processOneAnimation(question, anim, qDir) {
 
 export async function generateAnimations(analysisResult, taskDir) {
   const questions = analysisResult.questions || analysisResult.epics?.flatMap(e => e.questions) || [];
+  const taskId = taskDir.split(/[\\/]/).pop();
   const tasks = [];
 
   for (const question of questions) {
@@ -227,7 +256,7 @@ export async function generateAnimations(analysisResult, taskDir) {
     const qDir = join(taskDir, question.id.replace(/\./g, '-'));
     mkdirSync(qDir, { recursive: true });
     for (const anim of animations) {
-      tasks.push(() => processOneAnimation(question, anim, qDir));
+      tasks.push(() => processOneAnimation(question, anim, qDir, taskId));
     }
   }
 

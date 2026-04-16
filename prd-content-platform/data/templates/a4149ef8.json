@@ -87,7 +87,7 @@
       "presetKey": "text_label",
       "label": "选项A",
       "type": "text",
-      "color": "#ffffff",
+      "color": "#ffc800",
       "x": 210,
       "y": 597,
       "w": 300,
@@ -111,7 +111,7 @@
       "presetKey": "text_label",
       "label": "选项B",
       "type": "text",
-      "color": "#ffffff",
+      "color": "#ff9500",
       "x": 660,
       "y": 597,
       "w": 300,
@@ -135,7 +135,7 @@
       "presetKey": "text_label",
       "label": "选项C",
       "type": "text",
-      "color": "#ffffff",
+      "color": "#ffae00",
       "x": 1112,
       "y": 597,
       "w": 300,
@@ -195,7 +195,7 @@
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148229,
-  "updatedAt": 1776138950044,
+  "updatedAt": 1776336854168,
   "status": "completed",
   "safeTop": 240,
   "safeBottom": 856,
@@ -209,6 +209,19 @@
     "letterSpacing": 7.5
   },
   "optionStates": {
+    "normal": {
+      "borderWidth": 6,
+      "borderColor": "#ffffff",
+      "borderOpacity": 0,
+      "borderStyle": "solid",
+      "lineCap": "butt",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0
+    },
     "selected": {
       "borderWidth": 6,
       "borderColor": "#ffc933",
@@ -238,8 +251,8 @@
   },
   "animationSettings": {
     "fps": 10,
-    "usePalette": true,
     "maxColors": 256,
-    "dither": "floyd_steinberg"
+    "dither": "floyd_steinberg",
+    "usePalette": true
   }
 }

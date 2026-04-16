@@ -271,6 +271,72 @@ export async function azureTTS(text, voiceName, opts = {}) {
   return res.data.resultFiles[0];
 }
 
+const TTSHUB_URL = 'https://speech-inner.yuanfudao.com/apeman-tts-hub/api/v1/tts';
+
+export async function ttsHubTTS(text, speaker = 'xiaoyuan', opts = {}) {
+  const body = {
+    requestId: `prd_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    appKey: 'test',
+    appId: 'test',
+    text,
+    speaker,
+    withTimestamps: false,
+    audioFormat: { audioType: 'mp3', sampleRate: 24000 },
+    expressFeatures: {
+      speechRatio: opts.speechRatio ?? 1.0,
+      volumeRatio: opts.volumeRatio ?? 1.0,
+    },
+  };
+  const res = await fetch(TTSHUB_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (data.status !== 0) throw new Error(`TTS Hub error ${data.status}: ${data.message || 'unknown'}`);
+  return Buffer.from(data.audioContent.audioHexString, 'hex');
+}
+
+// ── 文本生成（借助 analyze-media 端点 + 占位图片） ──
+
+let _placeholderUri = null;
+async function getPlaceholderUri() {
+  if (_placeholderUri) return _placeholderUri;
+  const { createCanvas } = await import('canvas');
+  const cvs = createCanvas(64, 64);
+  const ctx = cvs.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 64, 64);
+  const imgBuf = cvs.toBuffer('image/png');
+
+  const uploadRes = await postJson(`${BASE}/gemini/upload-media`, {
+    fileName: 'placeholder.png',
+    mimeType: 'image/png',
+    fileSize: imgBuf.length,
+  });
+  const putRes = await fetch(uploadRes.data.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'image/png' },
+    body: imgBuf,
+  });
+  if (!putRes.ok) throw new Error('占位图上传失败');
+  _placeholderUri = uploadRes.data.fileUri;
+  return _placeholderUri;
+}
+
+export async function geminiChat(prompt, opts = {}) {
+  const model = opts.model || 'gemini-2.5-flash';
+  const fileUri = await getPlaceholderUri();
+  const res = await postJson(`${BASE}/gemini/analyze-media`, {
+    fileUri,
+    mimeType: 'image/png',
+    prompt: '忽略图片内容。' + prompt,
+    model,
+    stream: false,
+  });
+  return res.data?.analysis || res.data?.text || '';
+}
+
 // ── 辅助 ──
 
 export async function reversePrompt(imageUrl) {
@@ -281,4 +347,17 @@ export async function reversePrompt(imageUrl) {
 export async function downloadFile(url) {
   const res = await fetch(url);
   return Buffer.from(await res.arrayBuffer());
+}
+
+export async function uploadFileToCloud(buffer, fileName, mimeType) {
+  const uploadRes = await postJson(`${BASE}/gemini/upload-media`, {
+    fileName, mimeType, fileSize: buffer.length,
+  });
+  const putRes = await fetch(uploadRes.data.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': mimeType },
+    body: buffer,
+  });
+  if (!putRes.ok) throw new Error('文件上传云端失败');
+  return uploadRes.data.fileUri;
 }

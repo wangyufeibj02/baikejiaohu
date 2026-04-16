@@ -77,7 +77,7 @@
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148231,
-  "updatedAt": 1775627296054,
+  "updatedAt": 1776336854169,
   "status": "completed",
   "safeTop": 240,
   "safeBottom": 856,
@@ -91,29 +91,44 @@
     "letterSpacing": 0
   },
   "optionStates": {
-    "selected": {
-      "borderWidth": 4,
-      "borderColor": "#3b82f6",
-      "borderOpacity": 1,
-      "borderStyle": "dashed",
+    "normal": {
+      "borderWidth": 6,
+      "borderColor": "#ffffff",
+      "borderOpacity": 0,
+      "borderStyle": "solid",
+      "lineCap": "butt",
       "dashLength": 12,
       "dashGap": 6,
-      "borderGap": 8,
-      "borderRadius": 16,
-      "fillColor": "#3b82f6",
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0
+    },
+    "selected": {
+      "borderWidth": 6,
+      "borderColor": "#ffc933",
+      "borderOpacity": 1,
+      "borderStyle": "solid",
+      "lineCap": "round",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffc933",
       "fillOpacity": 0
     },
     "correct": {
-      "borderWidth": 4,
-      "borderColor": "#22c55e",
+      "borderWidth": 6,
+      "borderColor": "#00cc66",
       "borderOpacity": 1,
-      "borderStyle": "dashed",
+      "borderStyle": "solid",
+      "lineCap": "round",
       "dashLength": 12,
       "dashGap": 6,
-      "borderGap": 8,
-      "borderRadius": 16,
-      "fillColor": "#22c55e",
-      "fillOpacity": 0.15
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#00cc66",
+      "fillOpacity": 0.2
     }
   }
 }

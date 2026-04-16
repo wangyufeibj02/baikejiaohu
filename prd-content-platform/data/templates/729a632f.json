@@ -63,7 +63,7 @@
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148228,
-  "updatedAt": 1775628602669,
+  "updatedAt": 1776336854167,
   "status": "completed",
   "safeTop": 240,
   "safeBottom": 856,
@@ -77,6 +77,19 @@
     "letterSpacing": 0
   },
   "optionStates": {
+    "normal": {
+      "borderWidth": 6,
+      "borderColor": "#ffffff",
+      "borderOpacity": 0,
+      "borderStyle": "solid",
+      "lineCap": "butt",
+      "dashLength": 12,
+      "dashGap": 6,
+      "borderGap": 24,
+      "borderRadius": 30,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0
+    },
     "selected": {
       "borderWidth": 6,
       "borderColor": "#ffc933",

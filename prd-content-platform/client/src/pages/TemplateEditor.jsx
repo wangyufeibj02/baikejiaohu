@@ -14,6 +14,7 @@ const ELEMENT_PRESETS = {
   stem_text:    { label: '题干文字', w: 600, h: 80, color: '#0ea5e9', type: 'text' },
   audio_btn:    { label: '配音按钮', w: 66, h: 66, color: '#22c55e', type: 'circle' },
   text_label:   { label: '文字标签', w: 200, h: 60, color: '#f59e0b', type: 'text' },
+  control_widget: { label: '控件', w: 80, h: 80, color: '#14b8a6', type: 'rect' },
   free_rect:    { label: '矩形', w: 300, h: 200, color: '#64748b', type: 'rect' },
   bg_area:      { label: '背景区', w: 1624, h: 1050, color: '#94a3b8', type: 'rect' },
   collide_zone: { label: '碰撞区', w: 230, h: 230, color: '#ef4444', type: 'rect' },
@@ -104,6 +105,7 @@ const CONFIG_KEY_MAP = {
   option_image: 'options', stem_image: 'guidePictures', audio_btn: 'audioPictures',
   bg_area: 'normalBackgroundPictures', collide_zone: 'collides',
   animation_area: 'startAnimations', text_label: '_textLabels',
+  control_widget: 'controlWidgets',
 };
 
 // ─── Alignment icons (inline SVG paths) ──────────────────
@@ -243,6 +245,7 @@ export default function TemplateEditor() {
   });
 
   const DEFAULT_OPTION_STATES = {
+    normal:   { borderWidth: 0, borderColor: '#cccccc', borderOpacity: 0, borderStyle: 'solid', lineCap: 'butt', dashLength: 12, dashGap: 6, borderGap: 30, borderRadius: 16, fillColor: '#ffffff', fillOpacity: 0 },
     selected: { borderWidth: 4, borderColor: '#3b82f6', borderOpacity: 1, borderStyle: 'dashed', lineCap: 'round', dashLength: 12, dashGap: 6, borderGap: 8, borderRadius: 16, fillColor: '#3b82f6', fillOpacity: 0 },
     correct:  { borderWidth: 4, borderColor: '#22c55e', borderOpacity: 1, borderStyle: 'dashed', lineCap: 'round', dashLength: 12, dashGap: 6, borderGap: 8, borderRadius: 16, fillColor: '#22c55e', fillOpacity: 0.15 },
   };
@@ -360,7 +363,7 @@ export default function TemplateEditor() {
           setVariant(d.data.variant || '');
           setStatus(d.data.status || 'draft');
           if (d.data.textStyle) setTextStyle(ts => ({ ...ts, ...d.data.textStyle }));
-          if (d.data.optionStates) setOptionStates(os => ({ selected: { ...os.selected, ...d.data.optionStates.selected }, correct: { ...os.correct, ...d.data.optionStates.correct } }));
+          if (d.data.optionStates) setOptionStates(os => ({ normal: { ...os.normal, ...d.data.optionStates.normal }, selected: { ...os.selected, ...d.data.optionStates.selected }, correct: { ...os.correct, ...d.data.optionStates.correct } }));
           if (d.data.animationSettings) setAnimSettings(as => ({ ...as, ...d.data.animationSettings }));
           loadCanvasPresets();
           if (d.data.canvasPresetId) {
@@ -1079,13 +1082,15 @@ export default function TemplateEditor() {
       audioPictures: [], guidePictures: [], freeBgs: [], freeOptions: [],
       freeCollides: [], freeFinals: [], selectedImages: [], rightImages: [],
       startAnimations: [], endAnimations: [], wrongAnimations: [],
+      controlWidgets: [],
     };
     const counters = {};
     for (const el of elements) {
       const ck = CONFIG_KEY_MAP[el.presetKey];
       if (!ck || ck.startsWith('_') || !config[ck]) continue;
       const pfx = el.presetKey === 'bg_area' ? 'bg' : el.presetKey === 'audio_btn' ? 'audio' :
-                  el.presetKey === 'option_image' ? 'option' : el.presetKey === 'stem_image' ? 'guide' : el.presetKey;
+                  el.presetKey === 'option_image' ? 'option' : el.presetKey === 'stem_image' ? 'guide' :
+                  el.presetKey === 'control_widget' ? (el.widgetName || 'widget') : el.presetKey;
       counters[pfx] = (counters[pfx] || 0) + 1;
       config[ck].push({ name: `${pfx}${counters[pfx]}`, x: el.x, y: el.y, width: el.w, height: el.h });
     }
@@ -1467,6 +1472,45 @@ export default function TemplateEditor() {
                 </div>
               </div>
 
+              {selected.presetKey === 'control_widget' && (
+                <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 10 }}>
+                  <div className="panel-section-title" style={{ marginBottom: 8 }}>控件素材</div>
+                  <div className="prop-cell" style={{ marginBottom: 6 }}>
+                    <label>控件名</label>
+                    <input className="glass-input" value={selected.widgetName || ''} placeholder="如: speaker, guide"
+                      onChange={e => updateSelected({ widgetName: e.target.value })} />
+                  </div>
+                  {selected.assetUrl && (
+                    <div style={{ marginBottom: 6, padding: 4, background: 'rgba(20,184,166,0.08)', borderRadius: 6, textAlign: 'center' }}>
+                      <img src={selected.assetUrl} alt="控件" style={{ maxWidth: 64, maxHeight: 64, imageRendering: 'pixelated' }} />
+                      <div style={{ fontSize: 9, color: 'var(--text-muted)', marginTop: 2 }}>{selected.assetOrigName || '已上传'}</div>
+                    </div>
+                  )}
+                  <button className="btn btn-glass btn-sm" style={{ width: '100%', marginBottom: 4 }}
+                    onClick={() => {
+                      const inp = document.createElement('input');
+                      inp.type = 'file';
+                      inp.accept = '.png,.apng,.gif,.webp';
+                      inp.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        fd.append('elementId', selected.id);
+                        try {
+                          const tplId = id && id !== 'new' ? id : '_unsaved';
+                          const r = await fetch(`/api/templates/${tplId}/upload-asset`, { method: 'POST', body: fd });
+                          const d = await r.json();
+                          if (d.success) {
+                            updateSelected({ assetUrl: d.data.url, assetOrigName: file.name, assetPath: d.data.path });
+                          } else { alert('上传失败: ' + (d.error || '未知')); }
+                        } catch (err) { alert('上传失败: ' + err.message); }
+                      };
+                      inp.click();
+                    }}>上传 APNG/PNG 素材</button>
+                </div>
+              )}
+
               {singleTextSelected && (
                 <div style={{ marginTop: 10, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 10 }}>
                   <div className="panel-section-title" style={{ marginBottom: 8 }}>文字属性</div>
@@ -1712,9 +1756,27 @@ export default function TemplateEditor() {
           {/* Option state borders — only for choice types */}
           {questionType === 'choice' && (
             <div className="panel-section">
-              <div className="panel-section-title" onClick={() => togglePanel('optState')}>
-                <span className={`collapse-arrow ${collapsedPanels.optState ? '' : 'open'}`}>&#9654;</span>选项状态边框</div>
-              {!collapsedPanels.optState && <><div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>单选题生产正确态 · 多选题生产选中态+正确态</div>
+              <div className="panel-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span onClick={() => togglePanel('optState')} style={{ cursor: 'pointer' }}>
+                  <span className={`collapse-arrow ${collapsedPanels.optState ? '' : 'open'}`}>&#9654;</span>选项状态边框</span>
+                <button style={{ fontSize: 10, padding: '2px 8px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (!confirm('确定将当前选项状态配置同步到所有模板吗？')) return;
+                    try {
+                      const r = await fetch('/api/templates/sync-option-states', {
+                        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ optionStates }),
+                      });
+                      const d = await r.json();
+                      if (d.success) alert(`已同步到 ${d.data.updated} 个模板`);
+                      else alert('同步失败: ' + (d.error || '未知错误'));
+                    } catch (err) { alert('同步失败: ' + err.message); }
+                  }}>同步到所有模板</button>
+              </div>
+              {!collapsedPanels.optState && <><div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>常态间距定义内容图与卡片边缘的留白 · 选中态/正确态边框在同尺寸卡片上绘制</div>
+              <StatePanel label="常态" stateKey="normal" cfg={optionStates.normal}
+                onChange={(sk, k, v) => setOptionStates(prev => ({ ...prev, [sk]: { ...prev[sk], [k]: v } }))} />
               <StatePanel label="选中态 (多选题)" stateKey="selected" cfg={optionStates.selected}
                 onChange={(sk, k, v) => setOptionStates(prev => ({ ...prev, [sk]: { ...prev[sk], [k]: v } }))} />
               <StatePanel label="正确态" stateKey="correct" cfg={optionStates.correct}

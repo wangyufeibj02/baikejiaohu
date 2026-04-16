@@ -32,6 +32,7 @@ function emptyConfig() {
     freeBgs: [], freeOptions: [], freeCollides: [], freeFinals: [],
     selectedImages: [], rightImages: [],
     startAnimations: [], endAnimations: [], wrongAnimations: [],
+    controlWidgets: [],
   };
 }
 
@@ -39,53 +40,72 @@ function buildConfigFromTemplate(question, tpl) {
   const config = emptyConfig();
   if (!tpl || !tpl.elements) return config;
 
-  const qId = question.id;
   const els = tpl.elements;
-  const options = question.options || [];
+  const images = question.assets?.images || [];
+  const audios = question.assets?.audios || [];
+  const animations = question.assets?.animations || [];
 
   const optionEls = els.filter(e => e.presetKey === 'option_image' || (e.label || '').includes('选项图'));
-  const stemEls = els.filter(e => e.presetKey === 'stem_image' || (e.label || '').includes('题干'));
+  const stemEls = els.filter(e => e.presetKey === 'stem_image' || e.presetKey === 'stem_text' || (e.label || '').includes('题干'));
   const audioEls = els.filter(e => e.presetKey === 'audio_btn' || (e.label || '').includes('配音'));
   const bgEls = els.filter(e => e.presetKey === 'bg_area' || (e.label || '').includes('背景'));
   const collideEls = els.filter(e => e.presetKey === 'collide_zone' || (e.label || '').includes('碰撞'));
   const animEls = els.filter(e => e.presetKey === 'animation_area' || ((e.label || '').includes('动效') && e.presetKey !== 'anim_cover'));
   const coverEl = els.find(e => e.presetKey === 'anim_cover');
+  const textLabelEls = els.filter(e => e.presetKey === 'text_label');
+
+  const normalImages = images.filter(img => img.source !== '_state_variant');
+  const bgImages = normalImages.filter(img => img.name.startsWith('bg'));
+  const optionImages = normalImages.filter(img => img.name.match(/^option\d+$/));
 
   bgEls.forEach((el, i) => {
-    config.normalBackgroundPictures.push(rect(`${qId}_bg${i > 0 ? '_' + (i + 1) : ''}`, el.x, el.y, el.w, el.h));
+    config.normalBackgroundPictures.push(rect(`bg_area_${i + 1}`, el.x, el.y, el.w, el.h));
   });
 
   stemEls.forEach((el, i) => {
-    config.guidePictures.push(rect(`${qId}_stem${i > 0 ? '_' + (i + 1) : ''}`, el.x, el.y, el.w, el.h));
+    const bgImg = bgImages[i];
+    config.guidePictures.push(rect(bgImg ? bgImg.name : `bg${i + 1}`, el.x, el.y, el.w, el.h));
   });
 
-  optionEls.forEach((el, i) => {
-    const label = options[i]?.label || String.fromCharCode(65 + i);
-    config.options.push(rect(`${qId}_option_${label}`, el.x, el.y, el.w, el.h));
+  const optSizeEls = optionEls.length > 0 ? optionEls : textLabelEls;
+  optSizeEls.forEach((el, i) => {
+    const optImg = optionImages[i];
+    const name = optImg ? optImg.name : `option${i + 1}`;
+    if (optImg?.cardSize && optImg?.normalStateConfig) {
+      const [cw, ch] = optImg.cardSize.split('x').map(Number);
+      const expand = (optImg.normalStateConfig.borderGap || 0) + (optImg.normalStateConfig.borderWidth || 0);
+      config.options.push(rect(name, el.x - expand, el.y - expand, cw, ch));
+    } else {
+      config.options.push(rect(name, el.x, el.y, el.w, el.h));
+    }
   });
 
   audioEls.forEach((el, i) => {
-    config.audioPictures.push(rect(`${qId}_audio_${i + 1}`, el.x, el.y, el.w, el.h));
+    const aud = audios[i];
+    config.audioPictures.push(rect(aud ? aud.name : `audio${i + 1}`, el.x, el.y, el.w, el.h));
   });
 
   collideEls.forEach((el, i) => {
-    config.collides.push(rect(`${qId}_collide_${i + 1}`, el.x, el.y, el.w, el.h));
+    config.collides.push(rect(`collide${i + 1}`, el.x, el.y, el.w, el.h));
   });
 
-  animEls.forEach((el, i) => {
-    let ax = el.x, aw = el.w;
+  const ANIM_TYPE_TO_CONFIG = { opening: 'startAnimations', correct: 'endAnimations', wrong: 'wrongAnimations' };
+  for (const anim of animations) {
+    const animEl = animEls[0];
+    if (!animEl) continue;
+    let ax = animEl.x, aw = animEl.w;
     if (coverEl) {
-      const lp = Math.max(0, el.x - coverEl.x);
-      const rp = Math.max(0, (coverEl.x + coverEl.w) - (el.x + el.w));
+      const lp = Math.max(0, animEl.x - coverEl.x);
+      const rp = Math.max(0, (coverEl.x + coverEl.w) - (animEl.x + animEl.w));
       if (lp > 0 || rp > 0) {
-        ax = el.x - lp;
-        aw = lp + el.w + rp;
+        ax = animEl.x - lp;
+        aw = lp + animEl.w + rp;
       }
     }
-    config.startAnimations.push(rect(`${qId}_anim_${i + 1}`, ax, el.y, aw, el.h));
-  });
+    const targetArr = ANIM_TYPE_TO_CONFIG[anim.animType] || 'startAnimations';
+    config[targetArr].push(rect(anim.name, ax, animEl.y, aw, animEl.h));
+  }
 
-  const images = question.assets?.images || [];
   for (const img of images) {
     if (img.source === '_state_variant' && img.stateType === 'selected') {
       const baseOpt = config.options.find(o => o.name === img.baseImageName);
@@ -101,9 +121,15 @@ function buildConfigFromTemplate(question, tpl) {
     }
   }
 
-  const hasCorrectAnim = question.assets?.animations?.some(a => a.name.includes('correct'));
-  if (hasCorrectAnim) {
-    config.endBackgroundPictures.push(rect(`${qId}_bg_right`, 0, 0, tpl.canvasWidth || 1624, tpl.canvasHeight || 1050));
+  const hasRightAnim = animations.some(a => a.animType === 'correct');
+  if (hasRightAnim) {
+    const firstBg = bgImages[0];
+    config.endBackgroundPictures.push(rect(firstBg ? `${firstBg.name}_right` : 'bg1_right', 0, 0, tpl.canvasWidth || 1624, tpl.canvasHeight || 1050));
+  }
+
+  const widgets = question.assets?.controlWidgets || [];
+  for (const w of widgets) {
+    config.controlWidgets.push(rect(w.name, w.x, w.y, w.w, w.h));
   }
 
   return config;
@@ -111,18 +137,25 @@ function buildConfigFromTemplate(question, tpl) {
 
 function fallbackConfig(question) {
   const config = emptyConfig();
-  const qId = question.id;
   const options = question.options || [];
+  const images = question.assets?.images || [];
+  const audios = question.assets?.audios || [];
 
-  config.normalBackgroundPictures.push(rect(`${qId}_bg`, 12, -146, 1624, 1050));
+  const normalImages = images.filter(img => img.source !== '_state_variant');
+  const bgImages = normalImages.filter(img => img.name.startsWith('bg'));
+  const optionImages = normalImages.filter(img => img.name.match(/^option\d+$/));
+
+  const bgName = bgImages[0]?.name || 'bg1';
+  config.normalBackgroundPictures.push(rect(bgName, 12, -146, 1624, 1050));
 
   options.forEach((opt, i) => {
     const x = 347 + i * 350;
-    config.options.push(rect(`${qId}_option_${opt.label}`, x, 118, 230, 230));
-    config.audioPictures.push(rect(`${qId}_audio_${i + 1}`, x + 102, 645, 66, 66));
+    const optName = optionImages[i]?.name || `option${i + 1}`;
+    config.options.push(rect(optName, x, 118, 230, 230));
+    const audName = audios[i]?.name || `audio${i + 1}`;
+    config.audioPictures.push(rect(audName, x + 102, 645, 66, 66));
   });
 
-  const images = question.assets?.images || [];
   for (const img of images) {
     if (img.source === '_state_variant' && img.stateType === 'selected') {
       const baseOpt = config.options.find(o => o.name === img.baseImageName);

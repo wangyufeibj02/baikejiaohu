@@ -40,6 +40,8 @@ function buildConfigFromTemplate(question, tpl) {
   const config = emptyConfig();
   if (!tpl || !tpl.elements) return config;
 
+  const safeTop = tpl.safeTop || 0;
+
   const els = tpl.elements;
   const images = question.assets?.images || [];
   const audios = question.assets?.audios || [];
@@ -59,12 +61,12 @@ function buildConfigFromTemplate(question, tpl) {
   const optionImages = normalImages.filter(img => img.name.match(/^option\d+$/));
 
   bgEls.forEach((el, i) => {
-    config.normalBackgroundPictures.push(rect(`bg_area_${i + 1}`, el.x, el.y, el.w, el.h));
+    config.normalBackgroundPictures.push(rect(`bg_area_${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
   });
 
   stemEls.forEach((el, i) => {
     const bgImg = bgImages[i];
-    config.guidePictures.push(rect(bgImg ? bgImg.name : `bg${i + 1}`, el.x, el.y, el.w, el.h));
+    config.guidePictures.push(rect(bgImg ? bgImg.name : `bg${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
   });
 
   const optSizeEls = optionEls.length > 0 ? optionEls : textLabelEls;
@@ -74,19 +76,19 @@ function buildConfigFromTemplate(question, tpl) {
     if (optImg?.cardSize && optImg?.normalStateConfig) {
       const [cw, ch] = optImg.cardSize.split('x').map(Number);
       const expand = (optImg.normalStateConfig.borderGap || 0) + (optImg.normalStateConfig.borderWidth || 0);
-      config.options.push(rect(name, el.x - expand, el.y - expand, cw, ch));
+      config.options.push(rect(name, el.x - expand, el.y - expand - safeTop, cw, ch));
     } else {
-      config.options.push(rect(name, el.x, el.y, el.w, el.h));
+      config.options.push(rect(name, el.x, el.y - safeTop, el.w, el.h));
     }
   });
 
   audioEls.forEach((el, i) => {
     const aud = audios[i];
-    config.audioPictures.push(rect(aud ? aud.name : `audio${i + 1}`, el.x, el.y, el.w, el.h));
+    config.audioPictures.push(rect(aud ? aud.name : `audio${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
   });
 
   collideEls.forEach((el, i) => {
-    config.collides.push(rect(`collide${i + 1}`, el.x, el.y, el.w, el.h));
+    config.collides.push(rect(`collide${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
   });
 
   const ANIM_TYPE_TO_CONFIG = { opening: 'startAnimations', correct: 'endAnimations', wrong: 'wrongAnimations' };
@@ -103,7 +105,7 @@ function buildConfigFromTemplate(question, tpl) {
       }
     }
     const targetArr = ANIM_TYPE_TO_CONFIG[anim.animType] || 'startAnimations';
-    config[targetArr].push(rect(anim.name, ax, animEl.y, aw, animEl.h));
+    config[targetArr].push(rect(anim.name, ax, animEl.y - safeTop, aw, animEl.h));
   }
 
   for (const img of images) {
@@ -124,12 +126,12 @@ function buildConfigFromTemplate(question, tpl) {
   const hasRightAnim = animations.some(a => a.animType === 'correct');
   if (hasRightAnim) {
     const firstBg = bgImages[0];
-    config.endBackgroundPictures.push(rect(firstBg ? `${firstBg.name}_right` : 'bg1_right', 0, 0, tpl.canvasWidth || 1624, tpl.canvasHeight || 1050));
+    config.endBackgroundPictures.push(rect(firstBg ? `${firstBg.name}_right` : 'bg1_right', 0, -safeTop, tpl.canvasWidth || 1624, tpl.canvasHeight || 1050));
   }
 
   const widgets = question.assets?.controlWidgets || [];
   for (const w of widgets) {
-    config.controlWidgets.push(rect(w.name, w.x, w.y, w.w, w.h));
+    config.controlWidgets.push(rect(w.name, w.x, w.y - safeTop, w.w, w.h));
   }
 
   return config;

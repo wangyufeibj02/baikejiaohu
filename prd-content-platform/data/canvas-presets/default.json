@@ -4,8 +4,8 @@
   "isDefault": true,
   "canvasWidth": 1624,
   "canvasHeight": 1050,
-  "safeTop": 240,
-  "safeBottom": 856,
+  "safeTop": 150,
+  "safeBottom": 900,
   "showBackBtn": false,
   "showProgressBar": true,
   "showBottomPill": true,
@@ -16,7 +16,7 @@
   "progressBarW": 440,
   "bottomPillY": 873,
   "createdAt": 1775201880067,
-  "updatedAt": 1775208915392,
+  "updatedAt": 1776343970607,
   "elements": [
     {
       "id": "ce_5jly7h1",

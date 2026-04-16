@@ -48,7 +48,7 @@
               "target": ""
             },
             "correct": {
-              "description": "一只雄狮在草原上张嘴大吼",
+              "description": "一只雄狮在草原上吼",
               "duration": 4,
               "target": "动效区",
               "sourceImage": "",
@@ -71,9 +71,9 @@
       ]
     }
   ],
-  "status": "done",
+  "status": "ready",
   "createdAt": 1775210092982,
-  "updatedAt": 1776341401483,
+  "updatedAt": 1776345467360,
   "themeId": "b869e4a6",
   "ttsEngine": "ttshub",
   "ttsVoiceId": "shandian"

@@ -57,16 +57,82 @@
       "h": 226,
       "borderRadius": 30,
       "opacity": 10
+    },
+    {
+      "id": "el_qc95imn",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
+      "x": 340,
+      "y": 680,
+      "w": 66,
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
+    },
+    {
+      "id": "el_25e2rkp",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
+      "x": 780,
+      "y": 680,
+      "w": 66,
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
+    },
+    {
+      "id": "el_4wdkrz1",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
+      "x": 1220,
+      "y": 680,
+      "w": 66,
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
     }
   ],
   "isPreset": true,
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148228,
-  "updatedAt": 1776336854167,
+  "updatedAt": 1776596047348,
   "status": "completed",
-  "safeTop": 240,
-  "safeBottom": 856,
+  "safeTop": 150,
+  "safeBottom": 900,
   "canvasPresetId": "default",
   "textStyle": {
     "fontFamily": "方正粗圆斑马英语",
@@ -116,5 +182,10 @@
       "fillColor": "#00cc66",
       "fillOpacity": 0.2
     }
+  },
+  "animationSettings": {
+    "fps": 10,
+    "maxColors": 256,
+    "dither": "floyd_steinberg"
   }
 }

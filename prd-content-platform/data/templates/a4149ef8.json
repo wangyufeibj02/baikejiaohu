@@ -189,13 +189,79 @@
         "bl": 10
       },
       "opacity": 0.2
+    },
+    {
+      "id": "el_7jlne73",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
+      "x": 330,
+      "y": 715,
+      "w": 66,
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
+    },
+    {
+      "id": "el_fphlhie",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
+      "x": 780,
+      "y": 715,
+      "w": 66,
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
+    },
+    {
+      "id": "el_jcl7zj9",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
+      "x": 1230,
+      "y": 715,
+      "w": 66,
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
     }
   ],
   "isPreset": true,
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148229,
-  "updatedAt": 1776344970696,
+  "updatedAt": 1776419139309,
   "status": "completed",
   "safeTop": 150,
   "safeBottom": 900,

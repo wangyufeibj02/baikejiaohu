@@ -14,6 +14,8 @@ import canvasPresetsRouter from './routes/canvasPresets.js';
 import prdRouter from './routes/prd.js';
 import tasksRouter from './routes/tasks.js';
 import themesRouter from './routes/themes.js';
+import workspacesRouter from './routes/workspaces.js';
+import stylesRouter from './routes/styles.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,6 +32,8 @@ app.use(express.json({ limit: '50mb' }));
 app.use('/uploads', express.static(join(ROOT, 'uploads')));
 app.use('/output', express.static(join(ROOT, 'output')));
 app.use('/template-assets', express.static(join(ROOT, 'data', 'template-assets')));
+app.use('/widget-library', express.static(join(ROOT, 'data', 'widget-library')));
+app.use('/workspace-assets', express.static(join(ROOT, 'data', 'workspace-assets')));
 
 app.use('/api/upload', uploadRouter);
 app.use('/api/analyze', analyzeRouter);
@@ -40,6 +44,8 @@ app.use('/api/canvas-presets', canvasPresetsRouter);
 app.use('/api/prd', prdRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/themes', themesRouter);
+app.use('/api/workspaces', workspacesRouter);
+app.use('/api/styles', stylesRouter);
 
 const DIST = join(ROOT, 'client', 'dist');
 app.use(express.static(DIST));

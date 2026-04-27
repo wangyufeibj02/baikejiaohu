@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 
 const CANVAS_W = 1624;
 const CANVAS_H = 1050;
@@ -21,6 +21,11 @@ const ELEMENT_PRESETS = {
   animation_area: { label: '动效区', w: 400, h: 300, color: '#a855f7', type: 'rect' },
   anim_cover:     { label: '白边覆盖区', w: 1200, h: 300, color: '#d946ef', type: 'rect' },
 };
+
+const WIDGET_LIBRARY = [
+  { key: 'audio', label: '喇叭', icon: '/widget-library/audio.png', ext: 'png', w: 66, h: 66, configKey: 'audioPictures' },
+  { key: 'audio', label: '喇叭动效', icon: '/widget-library/audio_apng.png', ext: 'png', w: 66, h: 66, configKey: 'audioPictures', fileName: 'audio_apng' },
+];
 
 const FONT_OPTIONS = [
   { value: '"PingFang SC", sans-serif', label: '苹方' },
@@ -224,6 +229,8 @@ function StatePanel({ label, stateKey, cfg, onChange }) {
 export default function TemplateEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get('from');
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const containerRef = useRef(null);
@@ -263,6 +270,7 @@ export default function TemplateEditor() {
   const [marquee, setMarquee] = useState(null);
   const [snapOn, setSnapOn] = useState(true);
   const [measureOn, setMeasureOn] = useState(true);
+  const [guides, setGuides] = useState({ vLines: [], hLines: [] });
   const [locked, setLocked] = useState(id && id !== 'new');
   const [status, setStatus] = useState('draft');
   const [collapsedGroups, setCollapsedGroups] = useState({});
@@ -271,6 +279,7 @@ export default function TemplateEditor() {
   const [draggingLine, setDraggingLine] = useState(null);
   const [showFixedUI, setShowFixedUI] = useState(true);
   const [editingGroupId, setEditingGroupId] = useState(null);
+  const widgetImgCache = useRef({});
 
   const [collapsedPanels, setCollapsedPanels] = useState(() => {
     try { return JSON.parse(localStorage.getItem('tpl_panels') || '{}'); } catch { return {}; }
@@ -427,7 +436,7 @@ export default function TemplateEditor() {
     return () => wrap.removeEventListener('wheel', onWheel);
   }, [scale, pan]);
 
-  useEffect(() => { draw(); }, [elements, selectedIds, scale, marquee, measureOn, safeTop, safeBottom, showFixedUI, canvasPresetData]);
+  useEffect(() => { draw(); }, [elements, selectedIds, scale, marquee, measureOn, safeTop, safeBottom, showFixedUI, canvasPresetData, guides]);
 
   const selEls = elements.filter(e => selectedIds.includes(e.id));
   const selected = selEls.length === 1 ? selEls[0] : null;
@@ -531,9 +540,11 @@ export default function TemplateEditor() {
     if (showFixedUI) drawFixedElements(ctx);
 
     for (const el of elements) {
+      if (el.hidden) continue;
       const isSel = selectedIds.includes(el.id);
       ctx.save();
-      ctx.globalAlpha = el.opacity ?? 1;
+      if (el.locked) ctx.globalAlpha = 0.4;
+      else ctx.globalAlpha = el.opacity ?? 1;
       const r = getCornerRadii(el);
 
       if (el.type === 'circle') {
@@ -565,6 +576,17 @@ export default function TemplateEditor() {
         ctx.strokeStyle = isSel ? '#6366f1' : el.color;
         ctx.lineWidth = isSel ? 3 : 1.5;
         roundRect(ctx, el.x, el.y, el.w, el.h, r); ctx.stroke();
+        if (el.assetUrl && el.presetKey === 'control_widget') {
+          const cached = widgetImgCache.current[el.assetUrl];
+          if (cached && cached.complete) {
+            ctx.drawImage(cached, el.x, el.y, el.w, el.h);
+          } else if (!cached) {
+            const img = new Image();
+            img.src = el.assetUrl;
+            img.onload = () => draw();
+            widgetImgCache.current[el.assetUrl] = img;
+          }
+        }
       }
 
       ctx.globalAlpha = 1;
@@ -595,6 +617,21 @@ export default function TemplateEditor() {
       const mw = Math.abs(marquee.x2 - marquee.x1), mh = Math.abs(marquee.y2 - marquee.y1);
       ctx.fillRect(mx, my, mw, mh);
       ctx.strokeRect(mx, my, mw, mh);
+      ctx.restore();
+    }
+
+    // ─── Smart guides ────────────────────────────────────
+    if (guides.vLines.length > 0 || guides.hLines.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      for (const g of guides.vLines) {
+        ctx.beginPath(); ctx.moveTo(g.x, g.y1 - 10); ctx.lineTo(g.x, g.y2 + 10); ctx.stroke();
+      }
+      for (const g of guides.hLines) {
+        ctx.beginPath(); ctx.moveTo(g.x1 - 10, g.y); ctx.lineTo(g.x2 + 10, g.y); ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -791,6 +828,7 @@ export default function TemplateEditor() {
   function hitTest(mx, my) {
     for (let i = elements.length - 1; i >= 0; i--) {
       const el = elements[i];
+      if (el.locked || el.hidden) continue;
       if (mx >= el.x && mx <= el.x + el.w && my >= el.y && my <= el.y + el.h) return el;
     }
     return null;
@@ -856,7 +894,7 @@ export default function TemplateEditor() {
         const el = elements.find(e => e.id === did);
         if (el) offsets[did] = { dx: x - el.x, dy: y - el.y };
       }
-      setDragging({ ids: dragIds, offsets, anchorX: x, anchorY: y });
+      setDragging({ ids: dragIds, offsets, anchorX: x, anchorY: y, primaryId: hit.id });
     } else {
       if (!e.shiftKey) setSelectedIds([]);
       setMarquee({ x1: x, y1: y, x2: x, y2: y });
@@ -896,15 +934,73 @@ export default function TemplateEditor() {
     }
 
     if (dragging) {
-      const { ids, offsets, anchorX, anchorY } = dragging;
-      const rawDx = x - anchorX, rawDy = y - anchorY;
-      setElements(prev => prev.map(el => {
-        if (!ids.includes(el.id)) return el;
-        const off = offsets[el.id] || { dx: 0, dy: 0 };
-        const nx = snap(clamp(x - off.dx, 0, CANVAS_W - el.w), snapOn);
-        const ny = snap(clamp(y - off.dy, 0, CANVAS_H - el.h), snapOn);
-        return { ...el, x: nx, y: ny };
-      }));
+      const { ids, offsets, primaryId } = dragging;
+      const GUIDE_THRESH = 5;
+
+      setElements(prev => {
+        const primary = prev.find(e => e.id === primaryId);
+        if (!primary) return prev;
+        const pOff = offsets[primaryId] || { dx: 0, dy: 0 };
+        let rawX = clamp(x - pOff.dx, 0, CANVAS_W - primary.w);
+        let rawY = clamp(y - pOff.dy, 0, CANVAS_H - primary.h);
+        if (snapOn) { rawX = snap(rawX, true); rawY = snap(rawY, true); }
+
+        const bbox = ids.length > 1 ? (() => {
+          const sEls = prev.filter(e => ids.includes(e.id));
+          const bx = Math.min(...sEls.map(e => e.x)), by = Math.min(...sEls.map(e => e.y));
+          return { x: bx, y: by, w: Math.max(...sEls.map(e => e.x + e.w)) - bx, h: Math.max(...sEls.map(e => e.y + e.h)) - by };
+        })() : null;
+
+        const dx = rawX - primary.x, dy = rawY - primary.y;
+        const dragRect = bbox
+          ? { x: bbox.x + dx, y: bbox.y + dy, w: bbox.w, h: bbox.h }
+          : { x: rawX, y: rawY, w: primary.w, h: primary.h };
+
+        const others = prev.filter(e => !ids.includes(e.id) && !e.hidden);
+        const vL = [], hL = [];
+        const dEdges = { left: dragRect.x, right: dragRect.x + dragRect.w, cx: dragRect.x + dragRect.w / 2 };
+        const dEdgesY = { top: dragRect.y, bottom: dragRect.y + dragRect.h, cy: dragRect.y + dragRect.h / 2 };
+        let snapDx = 0, snapDy = 0;
+        let bestVDist = GUIDE_THRESH + 1, bestHDist = GUIDE_THRESH + 1;
+
+        for (const o of others) {
+          const oE = { left: o.x, right: o.x + o.w, cx: o.x + o.w / 2 };
+          const oEy = { top: o.y, bottom: o.y + o.h, cy: o.y + o.h / 2 };
+          for (const dk of ['left', 'right', 'cx']) {
+            for (const ek of ['left', 'right', 'cx']) {
+              const dist = Math.abs(dEdges[dk] - oE[ek]);
+              if (dist < GUIDE_THRESH && dist < bestVDist) {
+                bestVDist = dist; snapDx = oE[ek] - dEdges[dk];
+                vL.length = 0; vL.push({ x: oE[ek], y1: Math.min(dragRect.y, o.y), y2: Math.max(dragRect.y + dragRect.h, o.y + o.h) });
+              } else if (dist === bestVDist && dist < GUIDE_THRESH) {
+                vL.push({ x: oE[ek], y1: Math.min(dragRect.y, o.y), y2: Math.max(dragRect.y + dragRect.h, o.y + o.h) });
+              }
+            }
+          }
+          for (const dk of ['top', 'bottom', 'cy']) {
+            for (const ek of ['top', 'bottom', 'cy']) {
+              const dist = Math.abs(dEdgesY[dk] - oEy[ek]);
+              if (dist < GUIDE_THRESH && dist < bestHDist) {
+                bestHDist = dist; snapDy = oEy[ek] - dEdgesY[dk];
+                hL.length = 0; hL.push({ y: oEy[ek], x1: Math.min(dragRect.x, o.x), x2: Math.max(dragRect.x + dragRect.w, o.x + o.w) });
+              } else if (dist === bestHDist && dist < GUIDE_THRESH) {
+                hL.push({ y: oEy[ek], x1: Math.min(dragRect.x, o.x), x2: Math.max(dragRect.x + dragRect.w, o.x + o.w) });
+              }
+            }
+          }
+        }
+
+        const finalDx = dx + snapDx, finalDy = dy + snapDy;
+        setGuides({ vLines: vL, hLines: hL });
+
+        return prev.map(el => {
+          if (!ids.includes(el.id)) return el;
+          return { ...el,
+            x: clamp(el.x + finalDx, 0, CANVAS_W - el.w),
+            y: clamp(el.y + finalDy, 0, CANVAS_H - el.h),
+          };
+        });
+      });
     }
   }
 
@@ -916,7 +1012,7 @@ export default function TemplateEditor() {
       const mx2 = Math.max(marquee.x1, marquee.x2), my2 = Math.max(marquee.y1, marquee.y2);
       if (mx2 - mx1 > 5 || my2 - my1 > 5) {
         const hit = elements.filter(el =>
-          el.x < mx2 && el.x + el.w > mx1 && el.y < my2 && el.y + el.h > my1
+          !el.hidden && !el.locked && el.x < mx2 && el.x + el.w > mx1 && el.y < my2 && el.y + el.h > my1
         ).map(el => el.id);
         setSelectedIds(hit);
       }
@@ -927,6 +1023,7 @@ export default function TemplateEditor() {
     }
     setDragging(null);
     setResizing(null);
+    setGuides({ vLines: [], hLines: [] });
   }
 
   // ─── Element operations ────────────────────────────────
@@ -942,6 +1039,24 @@ export default function TemplateEditor() {
         textContent: '示例文字', fontSize: 28, textColor: '#1e3a8a',
         fontFamily: '"PingFang SC", sans-serif', fontWeight: 'bold', textAlign: 'center',
       } : {}),
+    };
+    const next = [...elements, el];
+    commitElements(next);
+    setSelectedIds([el.id]);
+  }
+
+  function addWidgetElement(widget) {
+    const assetFile = widget.fileName || widget.key;
+    const el = {
+      id: uid(), presetKey: 'control_widget', label: widget.label, type: 'rect', color: '#14b8a6',
+      x: snap(CANVAS_W / 2 - widget.w / 2, snapOn), y: snap(safeTop + (safeBottom - safeTop) / 2 - widget.h / 2, snapOn),
+      w: widget.w, h: widget.h,
+      borderRadius: { tl: 0, tr: 0, br: 0, bl: 0 },
+      opacity: 1,
+      widgetName: widget.key,
+      assetUrl: widget.icon,
+      assetPath: `/data/widget-library/${assetFile}.${widget.ext || 'png'}`,
+      widgetConfigKey: widget.configKey,
     };
     const next = [...elements, el];
     commitElements(next);
@@ -1105,7 +1220,7 @@ export default function TemplateEditor() {
     const method = id && id !== 'new' ? 'PUT' : 'POST';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const json = await res.json();
-    if (json.success) navigate('/templates');
+    if (json.success) navigate(returnUrl || '/templates');
   }
 
   // ─── Render ────────────────────────────────────────────
@@ -1117,7 +1232,7 @@ export default function TemplateEditor() {
       {/* Toolbar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-glass btn-sm" onClick={() => navigate('/templates')}>&larr;</button>
+          <button className="btn btn-glass btn-sm" onClick={() => navigate(returnUrl || '/templates')} title={returnUrl ? '返回 PRD' : '返回模板列表'}>{returnUrl ? '← PRD' : '←'}</button>
           <ResizableField id="tpl_name" width={180}>
             <input className="glass-input" style={{ width: '100%', fontWeight: 600 }} placeholder="模板名称" value={name} onChange={e => setName(e.target.value)} />
           </ResizableField>
@@ -1173,7 +1288,7 @@ export default function TemplateEditor() {
           <button className="btn btn-glass btn-sm" onClick={undo} title="撤销 Ctrl+Z">↩</button>
           <button className="btn btn-glass btn-sm" onClick={redo} title="重做 Ctrl+Y">↪</button>
           <button className="btn btn-glass btn-sm" onClick={exportConfigJson}>导出</button>
-          <button className="btn btn-glass btn-sm" onClick={() => navigate('/templates')}>取消</button>
+          <button className="btn btn-glass btn-sm" onClick={() => navigate(returnUrl || '/templates')}>取消</button>
           <button
             className="btn btn-sm"
             style={{
@@ -1196,10 +1311,21 @@ export default function TemplateEditor() {
             <div className="panel-section-title" onClick={() => togglePanel('addEl')}>
               <span className={`collapse-arrow ${collapsedPanels.addEl ? '' : 'open'}`}>&#9654;</span>添加元素</div>
             {!collapsedPanels.addEl && <div className="elem-toolbar">
-              {Object.entries(ELEMENT_PRESETS).map(([key, p]) => (
+              {Object.entries(ELEMENT_PRESETS).filter(([key]) => key !== 'control_widget').map(([key, p]) => (
                 <button key={key} className="btn btn-glass btn-sm" onClick={() => addElement(key)}
                   style={{ borderLeftColor: p.color, borderLeftWidth: 3 }}>{p.label}</button>
               ))}
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>控件库</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {WIDGET_LIBRARY.map(w => (
+                    <button key={w.key} className="btn btn-glass btn-sm" onClick={() => addWidgetElement(w)}
+                      style={{ borderLeftColor: '#14b8a6', borderLeftWidth: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <img src={w.icon} alt={w.label} style={{ width: 16, height: 16 }} />{w.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>}
           </div>
           <div className="panel-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -1238,7 +1364,11 @@ export default function TemplateEditor() {
                           border: '1px solid rgba(99,102,241,0.15)',
                           display: 'flex', alignItems: 'center', gap: 4,
                         }}
-                        onClick={() => selectGroup(gId)}
+                        onClick={(e) => {
+                          const ids = elements.filter(el => el.groupId === gId).map(el => el.id);
+                          if (e.shiftKey || e.ctrlKey || e.metaKey) setSelectedIds(prev => [...new Set([...prev, ...ids])]);
+                          else setSelectedIds(ids);
+                        }}
                         onDoubleClick={(e) => { e.stopPropagation(); setEditingGroupId(gId); }}
                       >
                         <span
@@ -1270,7 +1400,7 @@ export default function TemplateEditor() {
                         rows.push(
                           <div key={child.id}
                             onClick={(e) => {
-                              if (e.shiftKey) setSelectedIds(prev => prev.includes(child.id) ? prev.filter(i => i !== child.id) : [...prev, child.id]);
+                              if (e.shiftKey || e.ctrlKey || e.metaKey) setSelectedIds(prev => prev.includes(child.id) ? prev.filter(i => i !== child.id) : [...prev, child.id]);
                               else setSelectedIds([child.id]);
                             }}
                             style={{
@@ -1278,11 +1408,18 @@ export default function TemplateEditor() {
                               background: selectedIds.includes(child.id) ? 'var(--ice-light)' : 'transparent',
                               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                             }}>
-                            <span>
+                            <span style={{ opacity: child.hidden ? 0.4 : 1 }}>
                               <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 2, background: child.color, marginRight: 4 }} />
                               {child.label}
                             </span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: 9.5 }}>{child.w}×{child.h}</span>
+                            <span style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
+                              <button onClick={ev => { ev.stopPropagation(); commitElements(elements.map(e => e.id === child.id ? { ...e, hidden: !e.hidden } : e)); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, padding: '0 2px', opacity: child.hidden ? 0.3 : 0.6 }}
+                                title={child.hidden ? '显示' : '隐藏'}>{child.hidden ? '👁‍🗨' : '👁'}</button>
+                              <button onClick={ev => { ev.stopPropagation(); commitElements(elements.map(e => e.id === child.id ? { ...e, locked: !e.locked } : e)); }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, padding: '0 2px', opacity: child.locked ? 1 : 0.3 }}
+                                title={child.locked ? '解锁' : '锁定'}>{child.locked ? '🔒' : '🔓'}</button>
+                            </span>
                           </div>
                         );
                       }
@@ -1293,7 +1430,7 @@ export default function TemplateEditor() {
                     rows.push(
                       <div key={el.id}
                         onClick={(e) => {
-                          if (e.shiftKey) setSelectedIds(prev => prev.includes(el.id) ? prev.filter(i => i !== el.id) : [...prev, el.id]);
+                          if (e.shiftKey || e.ctrlKey || e.metaKey) setSelectedIds(prev => prev.includes(el.id) ? prev.filter(i => i !== el.id) : [...prev, el.id]);
                           else setSelectedIds([el.id]);
                         }}
                         style={{
@@ -1301,11 +1438,18 @@ export default function TemplateEditor() {
                           background: selectedIds.includes(el.id) ? 'var(--ice-light)' : 'transparent',
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         }}>
-                        <span>
+                        <span style={{ opacity: el.hidden ? 0.4 : 1 }}>
                           <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: el.color, marginRight: 5 }} />
                           {el.label}
                         </span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{el.x},{el.y} {el.w}×{el.h}</span>
+                        <span style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
+                          <button onClick={ev => { ev.stopPropagation(); commitElements(elements.map(e => e.id === el.id ? { ...e, hidden: !e.hidden } : e)); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, padding: '0 2px', opacity: el.hidden ? 0.3 : 0.6 }}
+                            title={el.hidden ? '显示' : '隐藏'}>{el.hidden ? '👁‍🗨' : '👁'}</button>
+                          <button onClick={ev => { ev.stopPropagation(); commitElements(elements.map(e => e.id === el.id ? { ...e, locked: !e.locked } : e)); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, padding: '0 2px', opacity: el.locked ? 1 : 0.3 }}
+                            title={el.locked ? '解锁' : '锁定'}>{el.locked ? '🔒' : '🔓'}</button>
+                        </span>
                       </div>
                     );
                   }
@@ -1396,7 +1540,46 @@ export default function TemplateEditor() {
               <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                 <button className="btn btn-glass btn-sm" style={{ flex: 1, fontSize: 11 }} onClick={groupSelected} disabled={selEls.length < 2}>编组</button>
                 <button className="btn btn-glass btn-sm" style={{ flex: 1, fontSize: 11 }} onClick={ungroupSelected} disabled={!selEls.some(e => e.groupId)}>解组</button>
-              </div></>}
+              </div>
+              {multi && (() => {
+                const stem = elements.find(e => e.presetKey === 'stem_image' || e.presetKey === 'stem_text');
+                return stem ? (
+                  <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                    <button className="btn btn-glass btn-sm" style={{ flex: 1, fontSize: 10.5, borderLeftColor: '#8b5cf6', borderLeftWidth: 3 }}
+                      title="将选中元素的水平中心对齐到题干图的水平中心"
+                      onClick={() => {
+                        const cx = stem.x + stem.w / 2;
+                        commitElements(elements.map(el => selectedIds.includes(el.id) ? { ...el, x: Math.round(cx - el.w / 2) } : el));
+                      }}>对齐题干中心</button>
+                  </div>
+                ) : null;
+              })()}
+              {!multi && selEls.length === 1 && (
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 6, textAlign: 'center' }}>
+                  Shift+点击 或 框选 来多选元素
+                </div>
+              )}</>}
+            </div>
+          )}
+
+          {/* Multi-select bounding box */}
+          {multi && (
+            <div className="panel-section">
+              <div className="panel-section-title" onClick={() => togglePanel('bbox')}>
+                <span className={`collapse-arrow ${collapsedPanels.bbox ? '' : 'open'}`}>&#9654;</span>选中 {selEls.length} 个元素</div>
+              {!collapsedPanels.bbox && (() => {
+                const bx = Math.min(...selEls.map(e => e.x)), by = Math.min(...selEls.map(e => e.y));
+                const bw = Math.max(...selEls.map(e => e.x + e.w)) - bx;
+                const bh = Math.max(...selEls.map(e => e.y + e.h)) - by;
+                return <div className="prop-grid">
+                  <div className="prop-cell"><label>X</label><input type="number" className="glass-input" value={bx}
+                    onChange={e => { const dx = +e.target.value - bx; commitElements(elements.map(el => selectedIds.includes(el.id) ? { ...el, x: el.x + dx } : el)); }} /></div>
+                  <div className="prop-cell"><label>Y</label><input type="number" className="glass-input" value={by}
+                    onChange={e => { const dy = +e.target.value - by; commitElements(elements.map(el => selectedIds.includes(el.id) ? { ...el, y: el.y + dy } : el)); }} /></div>
+                  <div className="prop-cell"><label>W</label><input type="number" className="glass-input" value={bw} disabled style={{ opacity: 0.5 }} /></div>
+                  <div className="prop-cell"><label>H</label><input type="number" className="glass-input" value={bh} disabled style={{ opacity: 0.5 }} /></div>
+                </div>;
+              })()}
             </div>
           )}
 
@@ -1677,6 +1860,23 @@ export default function TemplateEditor() {
                         return { ...el, y: Math.round(ny) };
                       }));
                     }}>纵向均分</button>
+                </div>
+                <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                  <button className="btn btn-glass btn-sm" style={{ flex: 1, fontSize: 10.5 }}
+                    title="自动将所有控件按从左到右顺序，分别对齐到选项图的水平中心"
+                    onClick={() => {
+                      const optEls = elements.filter(e => e.presetKey === 'option_image').sort((a, b) => a.x - b.x);
+                      const widgets = elements.filter(e => e.presetKey === 'control_widget').sort((a, b) => a.x - b.x);
+                      if (optEls.length === 0 || widgets.length === 0) return;
+                      const wids = new Set(widgets.map(w => w.id));
+                      commitElements(elements.map(el => {
+                        if (!wids.has(el.id)) return el;
+                        const idx = widgets.findIndex(w => w.id === el.id);
+                        if (idx < 0 || idx >= optEls.length) return el;
+                        const opt = optEls[idx];
+                        return { ...el, x: Math.round(opt.x + opt.w / 2 - el.w / 2) };
+                      }));
+                    }}>对齐选项</button>
                 </div>
               </div>
 

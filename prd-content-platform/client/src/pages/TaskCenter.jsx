@@ -27,7 +27,7 @@ function fmtDuration(start, end) {
 
 function ProgressBar({ progress }) {
   if (!progress || !progress.total) return null;
-  const pct = Math.round(((progress.done + progress.failed) / progress.total) * 100);
+  const pct = Math.min(100, Math.round(((progress.done + progress.failed) / progress.total) * 100));
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
       <div style={{ flex: 1, height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>

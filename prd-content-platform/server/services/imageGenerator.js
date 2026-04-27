@@ -283,7 +283,18 @@ async function processOneImage(question, img, qDir, taskDir) {
 
     if (img.referenceUrl) {
       let refUrl = img.referenceUrl;
-      if (refUrl.startsWith('/')) refUrl = `http://localhost:3200${refUrl}`;
+      if (refUrl.startsWith('/')) {
+        let rel = refUrl.slice(1);
+        if (rel.startsWith('workspace-assets/')) rel = 'data/' + rel;
+        else if (rel.startsWith('prd-assets/')) rel = 'data/' + rel;
+        const localPath = join(__dirname, '..', '..', rel);
+        if (existsSync(localPath)) {
+          const buf = readFileSync(localPath);
+          refUrl = `data:image/png;base64,${buf.toString('base64')}`;
+        } else {
+          refUrl = `http://localhost:3200${img.referenceUrl}`;
+        }
+      }
       genResult = await tryImageToImage(prompt, [refUrl], w, h);
     } else {
       genResult = await tryTextToImage(prompt, w, h);
@@ -390,10 +401,9 @@ export async function generateImages(analysisResult, taskDir) {
         let srcPath = w.assetPath;
         if (srcPath && srcPath.startsWith('/data/')) {
           srcPath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', srcPath);
-        }
-        if (w.assetUrl && w.assetUrl.startsWith('/')) {
+        } else if (w.assetUrl && w.assetUrl.startsWith('/')) {
           const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-          srcPath = join(rootDir, w.assetUrl);
+          srcPath = join(rootDir, 'data', w.assetUrl.replace(/^\//, ''));
         }
         if (srcPath && existsSync(srcPath)) {
           const buf = readFileSync(srcPath);

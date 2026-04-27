@@ -62,36 +62,58 @@
       "borderRadius": 30
     },
     {
-      "id": "pre_2g",
-      "presetKey": "audio_btn",
-      "label": "配音1",
-      "type": "circle",
-      "color": "#22c55e",
+      "id": "el_cn24kan",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
       "x": 594,
       "y": 781,
       "w": 66,
-      "h": 66
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
     },
     {
-      "id": "pre_2h",
-      "presetKey": "audio_btn",
-      "label": "配音2",
-      "type": "circle",
-      "color": "#22c55e",
+      "id": "el_gfon1tu",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
       "x": 964,
       "y": 781,
       "w": 66,
-      "h": 66
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
     }
   ],
   "isPreset": true,
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148231,
-  "updatedAt": 1776336854166,
+  "updatedAt": 1777259327213,
   "status": "completed",
-  "safeTop": 240,
-  "safeBottom": 856,
+  "safeTop": 150,
+  "safeBottom": 900,
   "canvasPresetId": "default",
   "optionStates": {
     "normal": {
@@ -133,5 +155,18 @@
       "fillColor": "#00cc66",
       "fillOpacity": 0.2
     }
+  },
+  "textStyle": {
+    "fontFamily": "方正粗圆斑马英语",
+    "fontSize": 36,
+    "fontColor": "#2f4d90",
+    "bgColor": "#ffffff",
+    "align": "center",
+    "letterSpacing": 0
+  },
+  "animationSettings": {
+    "fps": 10,
+    "maxColors": 256,
+    "dither": "floyd_steinberg"
   }
 }

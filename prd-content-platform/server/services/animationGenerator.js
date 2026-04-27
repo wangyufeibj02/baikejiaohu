@@ -1,9 +1,10 @@
-import { join } from 'path';
-import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { mkdirSync, writeFileSync, readFileSync, unlinkSync, existsSync, copyFileSync } from 'fs';
 import { execFile } from 'child_process';
+import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 import { createCanvas } from 'canvas';
-import { seedanceTextToVideo, seedanceImageToVideo, downloadFile, uploadFileToCloud } from './modaiClient.js';
+import { seedanceTextToVideo, seedanceImageToVideo, downloadFile } from './modaiClient.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -155,11 +156,27 @@ async function runWithConcurrency(taskFns, concurrency) {
   return Promise.all(results);
 }
 
+const __animDir = dirname(fileURLToPath(import.meta.url));
+const DATA_ROOT = join(__animDir, '..', '..');
+
 async function processOneAnimation(question, anim, qDir, taskId) {
   const tmpVideo = join(qDir, `${anim.name}_tmp.mp4`);
   const outPath = join(qDir, `${anim.name}.png`);
 
   try {
+    if (anim.customApngUrl) {
+      let localPath = anim.customApngUrl;
+      if (localPath.startsWith('/')) localPath = localPath.slice(1);
+      if (localPath.startsWith('uploads/')) { /* already correct */ }
+      const absPath = join(DATA_ROOT, localPath);
+      if (existsSync(absPath)) {
+        copyFileSync(absPath, outPath);
+        console.log(`[动效] 使用自定义APNG ${question.id}/${anim.name}`);
+        return { questionId: question.id, name: anim.name, description: '自定义上传', path: outPath, status: 'done' };
+      }
+      console.warn(`[动效] 自定义APNG文件不存在: ${absPath}，降级为AI生成`);
+    }
+
     if (!anim.description) {
       return { questionId: question.id, name: anim.name, status: 'skipped', error: '无描述' };
     }
@@ -178,13 +195,9 @@ async function processOneAnimation(question, anim, qDir, taskId) {
     if (anim.sourceImageName) {
       const imgPath = join(qDir, `${anim.sourceImageName}.png`);
       if (existsSync(imgPath)) {
-        try {
-          const imgBuf = readFileSync(imgPath);
-          refUrl = await uploadFileToCloud(imgBuf, `${anim.sourceImageName}.png`, 'image/png');
-          console.log(`[动效]   首帧来源: ${anim.sourceImageName} → 已上传云端`);
-        } catch (uploadErr) {
-          console.warn(`[动效]   首帧图片上传失败: ${uploadErr.message}，降级为文生视频`);
-        }
+        const imgBuf = readFileSync(imgPath);
+        refUrl = `data:image/png;base64,${imgBuf.toString('base64')}`;
+        console.log(`[动效]   首帧来源: ${anim.sourceImageName} (base64, ${Math.round(imgBuf.length/1024)}KB)`);
       } else {
         console.warn(`[动效]   首帧图片未找到: ${imgPath}，降级为文生视频`);
       }
@@ -192,15 +205,24 @@ async function processOneAnimation(question, anim, qDir, taskId) {
       refUrl = anim.referenceUrl;
       if (refUrl.startsWith('/')) {
         try {
-          const imgBuf = readFileSync(join(qDir, '..', '..', refUrl));
-          refUrl = await uploadFileToCloud(imgBuf, 'ref_frame.png', 'image/png');
-          console.log(`[动效]   参考帧已上传云端`);
-        } catch (uploadErr) {
-          console.warn(`[动效]   参考帧上传失败: ${uploadErr.message}，降级为文生视频`);
+          let rel = refUrl.slice(1);
+          if (rel.startsWith('workspace-assets/')) rel = 'data/' + rel;
+          else if (rel.startsWith('prd-assets/')) rel = 'data/' + rel;
+          const localPath = join(qDir, '..', '..', '..', rel);
+          if (existsSync(localPath)) {
+            const imgBuf = readFileSync(localPath);
+            refUrl = `data:image/png;base64,${imgBuf.toString('base64')}`;
+            console.log(`[动效]   参考帧已转为 base64`);
+          } else {
+            console.warn(`[动效]   参考帧文件不存在: ${localPath}，降级为文生视频`);
+            refUrl = null;
+          }
+        } catch (readErr) {
+          console.warn(`[动效]   参考帧读取失败: ${readErr.message}，降级为文生视频`);
           refUrl = null;
         }
       }
-      if (refUrl) console.log(`[动效]   使用参考帧: ${refUrl}`);
+      if (refUrl) console.log(`[动效]   使用参考帧`);
     }
 
     if (refUrl) {
@@ -244,6 +266,8 @@ async function processOneAnimation(question, anim, qDir, taskId) {
     };
   }
 }
+
+export { videoToApng };
 
 export async function generateAnimations(analysisResult, taskDir) {
   const questions = analysisResult.questions || analysisResult.epics?.flatMap(e => e.questions) || [];

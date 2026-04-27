@@ -75,7 +75,7 @@ export function createTask(prdId, prdName, analysisResult) {
   const questions = analysisResult.questions || [];
   let totalAssets = 0;
   for (const q of questions) {
-    totalAssets += (q.assets?.images?.length || 0) + (q.assets?.audios?.length || 0) + (q.assets?.animations?.length || 0);
+    totalAssets += (q.assets?.images?.length || 0) + (q.assets?.audios?.length || 0) + (q.assets?.animations?.length || 0) + (q.assets?.controlWidgets?.length || 0);
   }
 
   const task = {

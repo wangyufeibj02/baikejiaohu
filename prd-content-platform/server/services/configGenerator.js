@@ -52,7 +52,7 @@ function buildConfigFromTemplate(question, tpl) {
   const audioEls = els.filter(e => e.presetKey === 'audio_btn' || (e.label || '').includes('配音'));
   const bgEls = els.filter(e => e.presetKey === 'bg_area' || (e.label || '').includes('背景'));
   const collideEls = els.filter(e => e.presetKey === 'collide_zone' || (e.label || '').includes('碰撞'));
-  const animEls = els.filter(e => e.presetKey === 'animation_area' || ((e.label || '').includes('动效') && e.presetKey !== 'anim_cover'));
+  const animEls = els.filter(e => e.presetKey === 'animation_area' || ((e.label || '').includes('动效') && e.presetKey !== 'anim_cover' && e.presetKey !== 'control_widget'));
   const coverEl = els.find(e => e.presetKey === 'anim_cover');
   const textLabelEls = els.filter(e => e.presetKey === 'text_label');
 
@@ -60,13 +60,9 @@ function buildConfigFromTemplate(question, tpl) {
   const bgImages = normalImages.filter(img => img.name.startsWith('bg'));
   const optionImages = normalImages.filter(img => img.name.match(/^option\d+$/));
 
-  bgEls.forEach((el, i) => {
-    config.normalBackgroundPictures.push(rect(`bg_area_${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
-  });
-
   stemEls.forEach((el, i) => {
     const bgImg = bgImages[i];
-    config.guidePictures.push(rect(bgImg ? bgImg.name : `bg${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
+    config.normalBackgroundPictures.push(rect(bgImg ? bgImg.name : `bg${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
   });
 
   const optSizeEls = optionEls.length > 0 ? optionEls : textLabelEls;
@@ -91,8 +87,9 @@ function buildConfigFromTemplate(question, tpl) {
     config.collides.push(rect(`collide${i + 1}`, el.x, el.y - safeTop, el.w, el.h));
   });
 
-  const ANIM_TYPE_TO_CONFIG = { opening: 'startAnimations', correct: 'endAnimations', wrong: 'wrongAnimations' };
+  const ANIM_TYPE_TO_CONFIG = { opening: 'startAnimations', wrong: 'wrongAnimations' };
   for (const anim of animations) {
+    if (anim.animType === 'correct') continue;
     const animEl = animEls[0];
     if (!animEl) continue;
     let ax = animEl.x, aw = animEl.w;
@@ -126,12 +123,18 @@ function buildConfigFromTemplate(question, tpl) {
   const hasRightAnim = animations.some(a => a.animType === 'correct');
   if (hasRightAnim) {
     const firstBg = bgImages[0];
-    config.endBackgroundPictures.push(rect(firstBg ? `${firstBg.name}_right` : 'bg1_right', 0, -safeTop, tpl.canvasWidth || 1624, tpl.canvasHeight || 1050));
+    const ref = coverEl || animEls[0] || stemEls[0];
+    if (ref) {
+      config.endBackgroundPictures.push(rect(firstBg ? `${firstBg.name}_right` : 'bg1_right', ref.x, Math.round(ref.y - safeTop), ref.w, Math.round(ref.h)));
+    }
   }
 
+  const WIDGET_CONFIG_MAP = { audio: 'audioPictures' };
   const widgets = question.assets?.controlWidgets || [];
   for (const w of widgets) {
-    config.controlWidgets.push(rect(w.name, w.x, w.y - safeTop, w.w, w.h));
+    const targetKey = WIDGET_CONFIG_MAP[w.widgetName] || w.widgetConfigKey || 'controlWidgets';
+    const arr = config[targetKey] || config.controlWidgets;
+    arr.push(rect(w.name, w.x, w.y - safeTop, w.w, w.h));
   }
 
   return config;
@@ -147,8 +150,9 @@ function fallbackConfig(question) {
   const bgImages = normalImages.filter(img => img.name.startsWith('bg'));
   const optionImages = normalImages.filter(img => img.name.match(/^option\d+$/));
 
-  const bgName = bgImages[0]?.name || 'bg1';
-  config.normalBackgroundPictures.push(rect(bgName, 12, -146, 1624, 1050));
+  if (bgImages.length > 0) {
+    config.normalBackgroundPictures.push(rect(bgImages[0].name, 12, -146, 1624, 1050));
+  }
 
   options.forEach((opt, i) => {
     const x = 347 + i * 350;

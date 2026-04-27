@@ -9,6 +9,7 @@ import CanvasEditor from './pages/CanvasEditor.jsx';
 import PrdList from './pages/PrdList.jsx';
 import PrdEditor from './pages/PrdEditor.jsx';
 import TaskCenter from './pages/TaskCenter.jsx';
+import WorkspacePage from './pages/WorkspacePage.jsx';
 
 function TaskBadge() {
   const [count, setCount] = useState(0);
@@ -41,34 +42,40 @@ function TaskBadge() {
 }
 
 export default function App() {
+  const isWorkspaceWindow = window.location.pathname === '/workspace';
+
   return (
     <>
-      <nav className="nav">
-        <div className="nav-brand">AI 交互题平台</div>
-        <div className="nav-links">
-          <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            首页
-          </NavLink>
-          <NavLink to="/templates" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            题型模板
-          </NavLink>
-          <NavLink to="/prd" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            PRD 工作台
-          </NavLink>
-          <NavLink to="/tasks" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} style={{ position: 'relative' }}>
-            任务中心
-            <TaskBadge />
-          </NavLink>
-          <NavLink to="/production" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            手动生产
-          </NavLink>
-        </div>
-        <div className="nav-right">
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>v2.1</span>
-        </div>
-      </nav>
+      {!isWorkspaceWindow && (
+        <>
+          <nav className="nav">
+            <div className="nav-brand">AI 交互题平台</div>
+            <div className="nav-links">
+              <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                首页
+              </NavLink>
+              <NavLink to="/templates" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                题型模板
+              </NavLink>
+              <NavLink to="/prd" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                PRD 工作台
+              </NavLink>
+              <NavLink to="/tasks" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} style={{ position: 'relative' }}>
+                任务中心
+                <TaskBadge />
+              </NavLink>
+              <NavLink to="/production" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                手动生产
+              </NavLink>
+            </div>
+            <div className="nav-right">
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>v2.1</span>
+            </div>
+          </nav>
+        </>
+      )}
 
-      <div className="page-container">
+      <div className={isWorkspaceWindow ? '' : 'page-container'}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/templates" element={<TemplateList />} />
@@ -82,6 +89,7 @@ export default function App() {
           <Route path="/prd/:id" element={<PrdEditor />} />
           <Route path="/tasks" element={<TaskCenter />} />
           <Route path="/production" element={<Production />} />
+          <Route path="/workspace" element={<WorkspacePage />} />
         </Routes>
       </div>
 

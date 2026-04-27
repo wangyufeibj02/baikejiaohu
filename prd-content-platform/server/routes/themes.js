@@ -28,7 +28,7 @@ router.post('/', (req, res) => {
     name: req.body.name || '新主题',
     color: req.body.color || '#6366f1',
     productLine: req.body.productLine || '',
-    backgroundStyle: req.body.backgroundStyle || '自然纪录片实拍风格',
+    backgroundStyle: req.body.backgroundStyle || '自然纪录片实拍',
     voiceStyle: req.body.voiceStyle || '儿童科普风格，语速适中，亲切活泼',
     status: 'active',
     createdAt: Date.now(),

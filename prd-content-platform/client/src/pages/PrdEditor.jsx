@@ -966,6 +966,8 @@ export default function PrdEditor() {
         if (d.success) {
           const data = d.data;
           (data.epics || []).forEach(ep => { (ep.questions || []).forEach(qq => { if (!qq._key) qq._key = uid(); }); });
+          if (!data.ttsEngine) data.ttsEngine = 'ttshub';
+          if (!data.ttsVoiceId) data.ttsVoiceId = 'xiaoyuan';
           setPrd(data);
           const exp = {}; (data.epics || []).forEach((_, i) => { exp[i] = true; }); setExpandedEpics(exp);
         }
@@ -1150,6 +1152,14 @@ export default function PrdEditor() {
         <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>音色</span>
         <select className={inp} style={{ width: 110 }} value={prd.ttsVoiceId || ''} onChange={e => update(p => { p.ttsVoiceId = e.target.value; })}>
           {(TTS_ENGINES[prd.ttsEngine || 'ttshub']?.voices || []).map(v => <option key={v.id} value={v.id}>{v.label}</option>)}
+        </select>
+        <div style={{ width: 1, height: 18, background: 'rgba(56,189,248,0.15)' }} />
+        <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>绘图引擎</span>
+        <select className={inp} style={{ width: 80 }} value={prd.imageEngine || ''} onChange={e => update(p => { p.imageEngine = e.target.value; })}>
+          <option value="">自动</option>
+          <option value="doubao">豆包</option>
+          <option value="gemini">Gemini</option>
+          <option value="gpt">GPT</option>
         </select>
         <span style={{ flex: 1 }} />
         <span style={{ fontSize: 11, color: dirty ? '#eab308' : 'var(--text-muted)' }}>{saving ? '保存中...' : dirty ? '未保存' : '已保存'}</span>

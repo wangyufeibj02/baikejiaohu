@@ -8,15 +8,5 @@
     "voiceStyle": "儿童科普风格，语速适中，亲切活泼",
     "createdAt": 1775556121741,
     "status": "active"
-  },
-  {
-    "id": "1acc5c23",
-    "name": "王珊",
-    "color": "#0ea5e9",
-    "productLine": "9+科学",
-    "backgroundStyle": "写实3D渲染",
-    "voiceStyle": "儿童科普风格，语速适中，亲切活泼",
-    "status": "active",
-    "createdAt": 1776670519823
   }
 ]

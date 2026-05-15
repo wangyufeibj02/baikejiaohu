@@ -1,6 +1,6 @@
 {
   "id": "0d5f7a36",
-  "name": "图片题干-文字2选项",
+  "name": "图片题干-文字2选项+喇叭ok",
   "questionType": "choice",
   "stemType": "image",
   "optionStyle": "text",
@@ -17,7 +17,8 @@
       "x": 0,
       "y": 0,
       "w": 1624,
-      "h": 1050
+      "h": 1050,
+      "locked": true
     },
     {
       "id": "pre_2d",
@@ -29,37 +30,8 @@
       "y": 241,
       "w": 600,
       "h": 318,
-      "borderRadius": 30
-    },
-    {
-      "id": "pre_2e",
-      "presetKey": "text_label",
-      "label": "选项A",
-      "type": "text",
-      "color": "#f59e0b",
-      "x": 505,
-      "y": 621,
-      "w": 244,
-      "h": 150,
-      "textContent": "选项A",
-      "fontSize": 36,
-      "textColor": "#1e3a8a",
-      "borderRadius": 30
-    },
-    {
-      "id": "pre_2f",
-      "presetKey": "text_label",
-      "label": "选项B",
-      "type": "text",
-      "color": "#f59e0b",
-      "x": 875,
-      "y": 621,
-      "w": 244,
-      "h": 150,
-      "textContent": "选项B",
-      "fontSize": 36,
-      "textColor": "#1e3a8a",
-      "borderRadius": 30
+      "borderRadius": 30,
+      "locked": true
     },
     {
       "id": "el_cn24kan",
@@ -67,8 +39,8 @@
       "label": "喇叭动效",
       "type": "rect",
       "color": "#14b8a6",
-      "x": 594,
-      "y": 781,
+      "x": 582,
+      "y": 789,
       "w": 66,
       "h": 66,
       "borderRadius": {
@@ -89,8 +61,8 @@
       "label": "喇叭动效",
       "type": "rect",
       "color": "#14b8a6",
-      "x": 964,
-      "y": 781,
+      "x": 976,
+      "y": 789,
       "w": 66,
       "h": 66,
       "borderRadius": {
@@ -104,13 +76,80 @@
       "assetUrl": "/widget-library/audio_apng.png",
       "assetPath": "/data/widget-library/audio_apng.png",
       "widgetConfigKey": "audioPictures"
+    },
+    {
+      "id": "el_z6upzml",
+      "presetKey": "animation_area",
+      "label": "动效区",
+      "type": "rect",
+      "color": "#a855f7",
+      "x": 512,
+      "y": 241,
+      "w": 600,
+      "h": 318,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      },
+      "opacity": 1,
+      "locked": true
+    },
+    {
+      "id": "el_yzdlg33",
+      "presetKey": "text_label",
+      "label": "文字标签",
+      "type": "text",
+      "color": "#f59e0b",
+      "x": 857,
+      "y": 614,
+      "w": 304,
+      "h": 150,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      },
+      "opacity": 1,
+      "textContent": "示例文字",
+      "fontSize": 40,
+      "textColor": "#1e3a8a",
+      "fontFamily": "\"PingFang SC\", sans-serif",
+      "fontWeight": "bold",
+      "textAlign": "center"
+    },
+    {
+      "id": "el_mxkwu75",
+      "presetKey": "text_label",
+      "label": "文字标签",
+      "type": "text",
+      "color": "#f59e0b",
+      "x": 463,
+      "y": 614,
+      "w": 304,
+      "h": 150,
+      "borderRadius": {
+        "tl": 30,
+        "tr": 30,
+        "br": 30,
+        "bl": 30
+      },
+      "opacity": 1,
+      "textContent": "示例文字",
+      "fontSize": 40,
+      "textColor": "#1e3a8a",
+      "fontFamily": "\"PingFang SC\", sans-serif",
+      "fontWeight": "bold",
+      "textAlign": "center"
     }
   ],
   "isPreset": true,
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148231,
-  "updatedAt": 1777259327213,
+  "updatedAt": 1778148008743,
   "status": "completed",
   "safeTop": 150,
   "safeBottom": 900,
@@ -158,7 +197,7 @@
   },
   "textStyle": {
     "fontFamily": "方正粗圆斑马英语",
-    "fontSize": 36,
+    "fontSize": 40,
     "fontColor": "#2f4d90",
     "bgColor": "#ffffff",
     "align": "center",

@@ -1,6 +1,6 @@
 {
   "id": "a4149ef8",
-  "name": "语音题干-图文3选项",
+  "name": "语音题干-图文3选项带动效ok",
   "questionType": "choice",
   "stemType": "audio",
   "optionStyle": "imageText",
@@ -261,7 +261,7 @@
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148229,
-  "updatedAt": 1776419139309,
+  "updatedAt": 1778147399844,
   "status": "completed",
   "safeTop": 150,
   "safeBottom": 900,

@@ -279,6 +279,7 @@ export default function TemplateEditor() {
   const [draggingLine, setDraggingLine] = useState(null);
   const [showFixedUI, setShowFixedUI] = useState(true);
   const [editingGroupId, setEditingGroupId] = useState(null);
+  const [editingElId, setEditingElId] = useState(null);
   const widgetImgCache = useRef({});
 
   const [collapsedPanels, setCollapsedPanels] = useState(() => {
@@ -1335,6 +1336,20 @@ export default function TemplateEditor() {
               {(() => {
                 const groups = {};
                 const ungrouped = [];
+                const presetCounters = {};
+                elements.forEach(el => {
+                  const pk = el.presetKey;
+                  if (pk) presetCounters[pk] = (presetCounters[pk] || 0) + 1;
+                });
+                const presetSeq = {};
+                function labelWithSeq(el) {
+                  const pk = el.presetKey;
+                  if (pk && presetCounters[pk] > 1) {
+                    presetSeq[pk] = (presetSeq[pk] || 0) + 1;
+                    return `${el.label} ${presetSeq[pk]}`;
+                  }
+                  return el.label;
+                }
                 for (const el of elements) {
                   if (el.groupId) {
                     if (!groups[el.groupId]) groups[el.groupId] = { name: el.groupName || el.groupId, items: [] };
@@ -1408,9 +1423,15 @@ export default function TemplateEditor() {
                               background: selectedIds.includes(child.id) ? 'var(--ice-light)' : 'transparent',
                               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                             }}>
-                            <span style={{ opacity: child.hidden ? 0.4 : 1 }}>
+                            <span style={{ opacity: child.hidden ? 0.4 : 1 }}
+                              onDoubleClick={e => { e.stopPropagation(); setEditingElId(child.id); }}>
                               <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: 2, background: child.color, marginRight: 4 }} />
-                              {child.label}
+                              {editingElId === child.id ? (
+                                <input className="glass-input" style={{ width: 80, padding: '1px 4px', fontSize: 11 }} autoFocus
+                                  defaultValue={child.label} onClick={e => e.stopPropagation()}
+                                  onBlur={e => { commitElements(elements.map(el => el.id === child.id ? { ...el, label: e.target.value || child.label } : el)); setEditingElId(null); }}
+                                  onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditingElId(null); }} />
+                              ) : labelWithSeq(child)}
                             </span>
                             <span style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
                               <button onClick={ev => { ev.stopPropagation(); commitElements(elements.map(e => e.id === child.id ? { ...e, hidden: !e.hidden } : e)); }}
@@ -1438,9 +1459,15 @@ export default function TemplateEditor() {
                           background: selectedIds.includes(el.id) ? 'var(--ice-light)' : 'transparent',
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         }}>
-                        <span style={{ opacity: el.hidden ? 0.4 : 1 }}>
+                        <span style={{ opacity: el.hidden ? 0.4 : 1 }}
+                          onDoubleClick={e => { e.stopPropagation(); setEditingElId(el.id); }}>
                           <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: el.color, marginRight: 5 }} />
-                          {el.label}
+                          {editingElId === el.id ? (
+                            <input className="glass-input" style={{ width: 80, padding: '1px 4px', fontSize: 11 }} autoFocus
+                              defaultValue={el.label} onClick={e => e.stopPropagation()}
+                              onBlur={e => { commitElements(elements.map(ee => ee.id === el.id ? { ...ee, label: e.target.value || el.label } : ee)); setEditingElId(null); }}
+                              onKeyDown={e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') setEditingElId(null); }} />
+                          ) : labelWithSeq(el)}
                         </span>
                         <span style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
                           <button onClick={ev => { ev.stopPropagation(); commitElements(elements.map(e => e.id === el.id ? { ...e, hidden: !e.hidden } : e)); }}
@@ -1729,6 +1756,13 @@ export default function TemplateEditor() {
                         style={{ width: '100%', height: 28, border: 'none', cursor: 'pointer', borderRadius: 4 }} />
                     </div>
                   </div>
+                  <div className="prop-grid" style={{ marginTop: 6 }}>
+                    <div className="prop-cell">
+                      <label>字间距</label>
+                      <input type="number" className="glass-input" min="0" max="50" value={selected.letterSpacing || 0}
+                        onChange={e => updateSelected({ letterSpacing: Number(e.target.value) || 0 })} />
+                    </div>
+                  </div>
                   <div className="panel-row" style={{ marginTop: 6 }}>
                     <label style={{ width: 'auto' }}>字体</label>
                     <select className="glass-input" style={{ flex: 1 }} value={selected.fontFamily || '"PingFang SC", sans-serif'} onChange={e => updateSelected({ fontFamily: e.target.value })}>
@@ -1953,8 +1987,8 @@ export default function TemplateEditor() {
             </div></>}
           </div>
 
-          {/* Option state borders — only for choice types */}
-          {questionType === 'choice' && (
+          {/* Option state borders */}
+          {(questionType === 'choice' || questionType === 'connect') && (
             <div className="panel-section">
               <div className="panel-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span onClick={() => togglePanel('optState')} style={{ cursor: 'pointer' }}>

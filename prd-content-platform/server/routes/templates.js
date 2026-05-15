@@ -105,6 +105,25 @@ router.put('/sync-option-states', (req, res) => {
   res.json({ success: true, data: { updated: count } });
 });
 
+router.post('/:id/clone', (req, res) => {
+  const fp = join(DATA_DIR, `${req.params.id}.json`);
+  if (!existsSync(fp)) return res.status(404).json({ success: false, error: '模板不存在' });
+  const source = JSON.parse(readFileSync(fp, 'utf-8'));
+  const newId = randomUUID().slice(0, 8);
+  const clone = {
+    ...source,
+    id: newId,
+    name: `${source.name || '未命名'}(副本)`,
+    isPreset: false,
+    variant: undefined,
+    status: 'draft',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  writeFileSync(join(DATA_DIR, `${newId}.json`), JSON.stringify(clone, null, 2), 'utf-8');
+  res.json({ success: true, data: clone });
+});
+
 router.post('/:id/upload-asset', assetUpload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, error: '未选择文件' });
   const relPath = `/data/template-assets/${req.params.id}/${req.file.filename}`;

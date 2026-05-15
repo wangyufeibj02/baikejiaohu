@@ -10,6 +10,7 @@ import PrdList from './pages/PrdList.jsx';
 import PrdEditor from './pages/PrdEditor.jsx';
 import TaskCenter from './pages/TaskCenter.jsx';
 import WorkspacePage from './pages/WorkspacePage.jsx';
+import Toolbox from './pages/Toolbox.jsx';
 
 function TaskBadge() {
   const [count, setCount] = useState(0);
@@ -64,6 +65,9 @@ export default function App() {
                 任务中心
                 <TaskBadge />
               </NavLink>
+              <NavLink to="/tools" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                工具箱
+              </NavLink>
               <NavLink to="/production" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
                 手动生产
               </NavLink>
@@ -88,6 +92,7 @@ export default function App() {
           <Route path="/prd/new" element={<PrdEditor />} />
           <Route path="/prd/:id" element={<PrdEditor />} />
           <Route path="/tasks" element={<TaskCenter />} />
+          <Route path="/tools" element={<Toolbox />} />
           <Route path="/production" element={<Production />} />
           <Route path="/workspace" element={<WorkspacePage />} />
         </Routes>

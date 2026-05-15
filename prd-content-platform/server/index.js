@@ -16,6 +16,7 @@ import tasksRouter from './routes/tasks.js';
 import themesRouter from './routes/themes.js';
 import workspacesRouter from './routes/workspaces.js';
 import stylesRouter from './routes/styles.js';
+import toolsRouter from './routes/tools.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -46,6 +47,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/themes', themesRouter);
 app.use('/api/workspaces', workspacesRouter);
 app.use('/api/styles', stylesRouter);
+app.use('/api/tools', toolsRouter);
 
 const DIST = join(ROOT, 'client', 'dist');
 app.use(express.static(DIST));
@@ -56,15 +58,30 @@ app.get('*', (req, res) => {
   else res.status(404).send('前端未构建，请先运行 npm run build');
 });
 
-const PORT = process.env.PORT || 3200;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[prd-platform] 服务已启动 http://0.0.0.0:${PORT}`);
-  const nets = networkInterfaces();
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
-      if (net.family === 'IPv4' && !net.internal) {
-        console.log(`[prd-platform] 局域网访问 http://${net.address}:${PORT}`);
+const PREFERRED_PORT = parseInt(process.env.PORT) || 3200;
+const MAX_PORT_ATTEMPTS = 10;
+
+function tryListen(port, attempt) {
+  const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`[prd-platform] 服务已启动 http://localhost:${port}`);
+    const nets = networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal) {
+          console.log(`[prd-platform] 局域网访问 http://${net.address}:${port}`);
+        }
       }
     }
-  }
-});
+  });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
+      console.log(`[prd-platform] 端口 ${port} 被占用，尝试 ${port + 1}...`);
+      tryListen(port + 1, attempt + 1);
+    } else {
+      console.error(`[prd-platform] 启动失败:`, err.message);
+      process.exit(1);
+    }
+  });
+}
+
+tryListen(PREFERRED_PORT, 0);

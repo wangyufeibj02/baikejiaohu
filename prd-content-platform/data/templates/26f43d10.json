@@ -1,6 +1,6 @@
 {
   "id": "26f43d10",
-  "name": "语音题干-图文3选项带配音",
+  "name": "语音题干-图文3选项带配音ok",
   "questionType": "choice",
   "stemType": "audio",
   "optionStyle": "imageText",
@@ -131,47 +131,80 @@
       }
     },
     {
-      "id": "pre_z",
-      "presetKey": "audio_btn",
-      "label": "配音1",
-      "type": "circle",
-      "color": "#22c55e",
+      "id": "el_mfssbyg",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
       "x": 330,
-      "y": 679,
+      "y": 720,
       "w": 66,
-      "h": 66
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
     },
     {
-      "id": "pre_10",
-      "presetKey": "audio_btn",
-      "label": "配音2",
-      "type": "circle",
-      "color": "#22c55e",
+      "id": "el_q1ez4e6",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
       "x": 780,
-      "y": 679,
+      "y": 720,
       "w": 66,
-      "h": 66
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
     },
     {
-      "id": "pre_11",
-      "presetKey": "audio_btn",
-      "label": "配音3",
-      "type": "circle",
-      "color": "#22c55e",
+      "id": "el_xfyvlw0",
+      "presetKey": "control_widget",
+      "label": "喇叭动效",
+      "type": "rect",
+      "color": "#14b8a6",
       "x": 1230,
-      "y": 679,
+      "y": 720,
       "w": 66,
-      "h": 66
+      "h": 66,
+      "borderRadius": {
+        "tl": 0,
+        "tr": 0,
+        "br": 0,
+        "bl": 0
+      },
+      "opacity": 1,
+      "widgetName": "audio",
+      "assetUrl": "/widget-library/audio_apng.png",
+      "assetPath": "/data/widget-library/audio_apng.png",
+      "widgetConfigKey": "audioPictures"
     }
   ],
   "isPreset": true,
   "canvasWidth": 1624,
   "canvasHeight": 1050,
   "createdAt": 1775128148229,
-  "updatedAt": 1776336854167,
+  "updatedAt": 1778147451525,
   "status": "completed",
-  "safeTop": 240,
-  "safeBottom": 856,
+  "safeTop": 150,
+  "safeBottom": 900,
   "canvasPresetId": "default",
   "optionStates": {
     "normal": {
@@ -213,5 +246,18 @@
       "fillColor": "#00cc66",
       "fillOpacity": 0.2
     }
+  },
+  "textStyle": {
+    "fontFamily": "方正粗圆斑马英语",
+    "fontSize": 36,
+    "fontColor": "#2f4d90",
+    "bgColor": "#ffffff",
+    "align": "center",
+    "letterSpacing": 0
+  },
+  "animationSettings": {
+    "fps": 10,
+    "maxColors": 256,
+    "dither": "floyd_steinberg"
   }
 }

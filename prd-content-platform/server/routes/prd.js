@@ -120,10 +120,31 @@ function findStemElement(tpl) {
   return extractElData(el);
 }
 
+function normalizeBorderRadius(br) {
+  if (!br) return 0;
+  if (typeof br === 'number') return br;
+  if (typeof br === 'object') {
+    const vals = [br.tl, br.tr, br.br, br.bl].filter(v => typeof v === 'number');
+    return vals.length ? Math.max(...vals) : 0;
+  }
+  return 0;
+}
+
 function findStemTextElement(tpl) {
   if (!tpl) return null;
   const el = tpl.elements?.find(e => e.presetKey === 'stem_text');
-  return el ? { w: el.w, h: el.h, borderRadius: 0 } : null;
+  if (!el) return null;
+  return {
+    w: el.w, h: el.h,
+    borderRadius: normalizeBorderRadius(el.borderRadius),
+    fontSize: el.fontSize,
+    textColor: el.textColor,
+    bgColor: el.color,
+    fontFamily: el.fontFamily,
+    fontWeight: el.fontWeight,
+    letterSpacing: el.letterSpacing,
+    textAlign: el.textAlign,
+  };
 }
 
 function readAll() {
@@ -254,13 +275,23 @@ router.post('/:id/produce', (req, res) => {
 
       if (tpl?.stemType === 'text' && q.stem) {
         const stemTxtEl = findStemTextElement(tpl);
+        const elStyle = {};
+        if (stemTxtEl?.fontSize) elStyle.fontSize = stemTxtEl.fontSize;
+        if (stemTxtEl?.textColor) elStyle.fontColor = stemTxtEl.textColor;
+        if (stemTxtEl?.bgColor) elStyle.bgColor = stemTxtEl.bgColor;
+        if (stemTxtEl?.fontFamily) elStyle.fontFamily = stemTxtEl.fontFamily;
+        if (stemTxtEl?.fontWeight) elStyle.fontWeight = stemTxtEl.fontWeight;
+        if (stemTxtEl?.letterSpacing != null) elStyle.letterSpacing = stemTxtEl.letterSpacing;
+        if (stemTxtEl?.textAlign) elStyle.textAlign = stemTxtEl.textAlign;
+        const textStyle = { ...DEFAULT_TEXT_STYLE, ...elStyle };
         assets.images.push({
           name: `bg${bgIdx}`,
           mediaType: '文字',
           source: 'text_render',
           text: q.stem,
           size: stemTxtEl ? `${stemTxtEl.w}x${stemTxtEl.h}` : '1000x80',
-          textStyle: tpl?.textStyle || DEFAULT_TEXT_STYLE,
+          borderRadius: stemTxtEl?.borderRadius || 0,
+          textStyle,
         });
         bgIdx++;
       }
@@ -450,8 +481,9 @@ router.post('/:id/produce', (req, res) => {
     backgroundStyle: prd.backgroundStyle,
     styleDescription: prd.styleDescription || '',
     voiceStyle: prd.voiceStyle,
-    ttsEngine: prd.ttsEngine || 'doubao',
+    ttsEngine: prd.ttsEngine || 'ttshub',
     ttsVoiceId: prd.ttsVoiceId || 'zh_female_vv_uranus_bigtts',
+    imageEngine: prd.imageEngine || '',
     questions,
     sourcePrdId: prd.id,
   };

@@ -254,6 +254,12 @@ export default function TemplateList() {
     });
   }
 
+  function handleClone(id) {
+    fetch(`/api/templates/${id}/clone`, { method: 'POST' }).then(r => r.json()).then(d => {
+      if (d.success) setTemplates(prev => [d.data, ...prev]);
+    });
+  }
+
   async function handleSeedPresets() {
     setSeeding(true);
     try {
@@ -428,6 +434,7 @@ export default function TemplateList() {
                   <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                     <span style={{ flex: 1 }} />
                     <button className="btn btn-glass btn-sm" onClick={e => e.stopPropagation()}>编辑</button>
+                    <button className="btn btn-glass btn-sm" onClick={e => { e.preventDefault(); e.stopPropagation(); handleClone(t.id); }}>复制</button>
                     <button className="btn btn-danger btn-sm" onClick={e => { e.preventDefault(); e.stopPropagation(); handleDelete(t.id); }}>删除</button>
                   </div>
                 </div>

@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, unlinkSync } from '
 import { fileURLToPath } from 'url';
 import sharp from 'sharp';
 import { createCanvas, registerFont } from 'canvas';
-import { doubaoTextToImage, geminiTextToImage, doubaoImageToImage, geminiImageToImage, downloadFile } from './modaiClient.js';
+import { doubaoTextToImage, geminiTextToImage, doubaoImageToImage, geminiImageToImage, gptTextToImage, gptImageToImage, downloadFile } from './modaiClient.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FONTS_DIR = join(__dirname, '..', '..', 'fonts');
@@ -38,30 +38,50 @@ function sizeToAspect(w, h) {
   return '1:1';
 }
 
-async function tryTextToImage(prompt, w, h) {
-  try {
-    console.log(`[图片]   尝试 Doubao text-to-image ...`);
-    const url = await doubaoTextToImage(prompt, w, h);
-    return { url, model: 'doubao' };
-  } catch (err) {
-    console.warn(`[图片]   Doubao 失败: ${err.message}`);
-    console.log(`[图片]   降级到 Gemini text-to-image ...`);
-    const url = await geminiTextToImage(prompt, sizeToAspect(w, h));
-    return { url, model: 'gemini' };
+const T2I_ENGINES = {
+  doubao: { fn: (p, w, h) => doubaoTextToImage(p, w, h), label: 'Doubao' },
+  gemini: { fn: (p, w, h) => geminiTextToImage(p, sizeToAspect(w, h)), label: 'Gemini' },
+  gpt:    { fn: (p, w, h) => gptTextToImage(p, w, h), label: 'GPT' },
+};
+const I2I_ENGINES = {
+  doubao: { fn: (p, refs, w, h) => doubaoImageToImage(p, refs, w, h), label: 'Doubao' },
+  gemini: { fn: (p, refs, w, h) => geminiImageToImage(p, refs, sizeToAspect(w, h)), label: 'Gemini' },
+  gpt:    { fn: (p, refs, w, h) => gptImageToImage(p, refs, w, h), label: 'GPT' },
+};
+const FALLBACK_ORDER = ['doubao', 'gemini'];
+
+async function tryTextToImage(prompt, w, h, engine) {
+  const order = engine && T2I_ENGINES[engine] ? [engine, ...FALLBACK_ORDER.filter(e => e !== engine)] : FALLBACK_ORDER;
+  let lastErr;
+  for (const key of order) {
+    const eng = T2I_ENGINES[key];
+    try {
+      console.log(`[图片]   尝试 ${eng.label} text-to-image ...`);
+      const url = await eng.fn(prompt, w, h);
+      return { url, model: key };
+    } catch (err) {
+      console.warn(`[图片]   ${eng.label} 失败: ${err.message}`);
+      lastErr = err;
+    }
   }
+  throw lastErr;
 }
 
-async function tryImageToImage(prompt, refUrls, w, h) {
-  try {
-    console.log(`[图片]   尝试 Doubao image-to-image ...`);
-    const url = await doubaoImageToImage(prompt, refUrls, w, h);
-    return { url, model: 'doubao-i2i' };
-  } catch (err) {
-    console.warn(`[图片]   Doubao i2i 失败: ${err.message}`);
-    console.log(`[图片]   降级到 Gemini image-to-image ...`);
-    const url = await geminiImageToImage(prompt, refUrls, sizeToAspect(w, h));
-    return { url, model: 'gemini-i2i' };
+async function tryImageToImage(prompt, refUrls, w, h, engine) {
+  const order = engine && I2I_ENGINES[engine] ? [engine, ...FALLBACK_ORDER.filter(e => e !== engine)] : FALLBACK_ORDER;
+  let lastErr;
+  for (const key of order) {
+    const eng = I2I_ENGINES[key];
+    try {
+      console.log(`[图片]   尝试 ${eng.label} image-to-image ...`);
+      const url = await eng.fn(prompt, refUrls, w, h);
+      return { url, model: `${key}-i2i` };
+    } catch (err) {
+      console.warn(`[图片]   ${eng.label} i2i 失败: ${err.message}`);
+      lastErr = err;
+    }
   }
+  throw lastErr;
 }
 
 function drawTextWithSpacing(ctx, text, x, y, letterSpacing) {
@@ -88,6 +108,7 @@ function renderTextBlock(text, w, h, textStyle) {
   const ts = textStyle || {};
   const fontFamily = ensureFont(ts.fontFamily || '方正粗圆斑马英语');
   const fontSize = ts.fontSize || 36;
+  const fontWeight = ts.fontWeight || 'normal';
   const fontColor = ts.fontColor || '#2f4d90';
   const bgColor = ts.bgColor || '#ffffff';
   const letterSpacing = ts.letterSpacing || 0;
@@ -98,11 +119,14 @@ function renderTextBlock(text, w, h, textStyle) {
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, w, h);
 
+  const align = ts.textAlign || 'center';
+  const textX = align === 'left' ? 8 : align === 'right' ? w - 8 : w / 2;
+
   ctx.fillStyle = fontColor;
-  ctx.font = `${fontSize}px "${fontFamily}"`;
-  ctx.textAlign = 'center';
+  ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}"`;
+  ctx.textAlign = align;
   ctx.textBaseline = 'middle';
-  drawTextWithSpacing(ctx, text, w / 2, h / 2, letterSpacing);
+  drawTextWithSpacing(ctx, text, textX, h / 2, letterSpacing);
 
   return cvs.toBuffer('image/png');
 }
@@ -208,7 +232,7 @@ async function runWithConcurrency(taskFns, concurrency) {
   return Promise.all(results);
 }
 
-async function processOneImage(question, img, qDir, taskDir) {
+async function processOneImage(question, img, qDir, taskDir, imageEngine) {
   const [w, h] = (img.size || '360x360').split('x').map(Number);
   const outPath = join(qDir, `${img.name}.png`);
   const hasText = img.text && img.textAreaSize;
@@ -295,9 +319,9 @@ async function processOneImage(question, img, qDir, taskDir) {
           refUrl = `http://localhost:3200${img.referenceUrl}`;
         }
       }
-      genResult = await tryImageToImage(prompt, [refUrl], w, h);
+      genResult = await tryImageToImage(prompt, [refUrl], w, h, imageEngine);
     } else {
-      genResult = await tryTextToImage(prompt, w, h);
+      genResult = await tryTextToImage(prompt, w, h, imageEngine);
     }
 
     const imageBuffer = await downloadFile(genResult.url);
@@ -330,6 +354,7 @@ async function processOneImage(question, img, qDir, taskDir) {
 
 export async function generateImages(analysisResult, taskDir) {
   const questions = analysisResult.questions || analysisResult.epics?.flatMap(e => e.questions) || [];
+  const imageEngine = analysisResult.imageEngine || '';
 
   const normalTasks = [];
   const variantTasks = [];
@@ -342,7 +367,7 @@ export async function generateImages(analysisResult, taskDir) {
       if (img.source === '_state_variant') {
         variantTasks.push({ question, img, qDir });
       } else {
-        normalTasks.push(() => processOneImage(question, img, qDir, taskDir));
+        normalTasks.push(() => processOneImage(question, img, qDir, taskDir, imageEngine));
       }
     }
   }

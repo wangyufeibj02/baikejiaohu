@@ -16,6 +16,13 @@ const CARDS = [
     link: '/production',
     color: 'var(--success)',
   },
+  {
+    title: '工具箱',
+    desc: '动效转换、图片处理、音频裁剪拼接等实用工具集',
+    icon: '\u{1F9F0}',
+    link: '/tools',
+    color: 'var(--warning)',
+  },
 ];
 
 export default function Dashboard() {

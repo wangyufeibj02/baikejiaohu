@@ -426,15 +426,15 @@ export default function PrdList() {
           </div>
           <div style={{ padding: '4px 16px 16px', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             {ungrouped.map(p => (
-              <div key={p.id} style={{ position: 'relative' }}>
+              <div key={p.id} style={{ position: 'relative' }}
+                onMouseEnter={e => { const btn = e.currentTarget.querySelector('.del-btn'); if (btn) btn.style.opacity = 1; e.currentTarget.querySelector('.card-inner').style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { const btn = e.currentTarget.querySelector('.del-btn'); if (btn) btn.style.opacity = 0; e.currentTarget.querySelector('.card-inner').style.transform = ''; }}>
                 <Link to={`/prd/${p.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <div style={{
+                  <div className="card-inner" style={{
                     width: 150, background: 'rgba(255,255,255,0.02)', borderRadius: 10,
                     border: '1px solid var(--glass-border)', cursor: 'pointer', padding: 12,
                     transition: 'transform .15s',
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = ''; }}>
+                  }}>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{p.name || '未命名'}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       {(p.epics || []).length} Epic · {countQuestions(p)} 题
@@ -447,15 +447,13 @@ export default function PrdList() {
                     </div>
                   </div>
                 </Link>
-                <button onClick={e => { e.preventDefault(); e.stopPropagation(); handleDeletePrd(p.id); }}
+                <button className="del-btn" onClick={e => { e.preventDefault(); e.stopPropagation(); handleDeletePrd(p.id); }}
                   style={{
                     position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: 4,
                     background: 'rgba(239,68,68,0.85)', color: '#fff', border: 'none', cursor: 'pointer',
                     fontSize: 12, lineHeight: '20px', textAlign: 'center', padding: 0, opacity: 0,
                     transition: 'opacity .15s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = 1; }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = 0; }}
                   title="删除">×</button>
               </div>
             ))}

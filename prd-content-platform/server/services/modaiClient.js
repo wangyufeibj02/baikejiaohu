@@ -128,6 +128,35 @@ export async function geminiImageToImage(prompt, inputFileUrls, aspectRatio = '1
   return res.data.resultFiles[0];
 }
 
+function gptSafeSize(w, h) {
+  const pixels = w * h;
+  const MIN_PX = 655360, MAX_PX = 8294400, MAX_SIDE = 3839;
+  if (pixels >= MIN_PX && pixels <= MAX_PX && w < MAX_SIDE && h < MAX_SIDE) return `${w}x${h}`;
+  const ratio = w / h;
+  if (ratio > 1.3) return '1536x1024';
+  if (ratio < 0.77) return '1024x1536';
+  return '1024x1024';
+}
+
+export async function gptTextToImage(prompt, width, height) {
+  const res = await postJson(`${BASE}/azure-openai/text-to-image`, {
+    prompt,
+    model: 'gpt-image-2',
+    parameters: { size: gptSafeSize(width, height), quality: 'medium', numImages: 1 },
+  });
+  return res.data.resultFiles[0];
+}
+
+export async function gptImageToImage(prompt, inputFileUrls, width, height) {
+  const res = await postJson(`${BASE}/azure-openai/image-to-image`, {
+    prompt,
+    inputFileUrls,
+    model: 'gpt-image-2',
+    parameters: { size: gptSafeSize(width, height), quality: 'medium', numImages: 1 },
+  });
+  return res.data.resultFiles[0];
+}
+
 // ── 视频生成 ──
 
 export async function veoTextToVideo(prompt, opts = {}) {
